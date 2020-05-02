@@ -20,6 +20,14 @@
 
 #define CAM_RATIO 0.75f // fieldWidth / distance ==> 15cm / 20cm
 
+#ifdef FOR_ANDROID
+	#include <android/log.h>
+	#define  LOG_TAG    "ESP32Client"
+	#define  ALOG(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
+#else
+	#define  ALOG(...)  printf("")
+#endif
+
 using namespace cv;
 using namespace std;
 

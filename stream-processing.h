@@ -13,7 +13,7 @@
 #define lower 10
 
 #define DEBUG_MERGED_LINES true
-
+using namespace cv;
 class StreamProcessing {
 	private:
 	Mat lastFrame;
@@ -26,7 +26,7 @@ class StreamProcessing {
 	vector<vector<Point> > contours;
 
 
-	const char* window_name = "Chess detector";
+	//const char* window_name = "Chess detector";
 
 	Mat laplacianSharpening(Mat src) {
 		Mat kernel = (Mat_<float>(3,3) <<
@@ -107,7 +107,7 @@ class StreamProcessing {
 
 		resize(lastFrame, lastFrame, Size(), 0.5 / scale, 0.5 / scale);
 		resize(detected_edges, detected_edges, Size(), 0.5 / scale, 0.5 / scale);
-		imshow (window_name, lastFrame);
+		//imshow (window_name, lastFrame);
 	}
 
 	RobotPosition traverseChessboard(RobotPosition position) {
@@ -565,13 +565,13 @@ class StreamProcessing {
 	void processFrame() {
 		if(!CALIBRATE) {
 			cvtColor( lastFrame, gray_lastFrame, COLOR_BGR2GRAY );
-			namedWindow(window_name, WINDOW_AUTOSIZE );
+			//namedWindow(window_name, WINDOW_AUTOSIZE );
 			manageRobot();
 			char fileName[42];
 			sprintf(fileName, "recorded/jpeg%d.jpg", frameReference);
 			imwrite(fileName, lastFrame);
 		}
-		waitKey(0);
+		//waitKey(0);
 	}
 
 	void processJPEG( int nSize, char* jpeg) {
