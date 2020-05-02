@@ -22,9 +22,9 @@ class DetermineChessBoard {
 		squareIntercepts.clear();
 		sort(mergedLines.begin(), mergedLines.end(), sortLinesGradient);
 
-		bool lineVisited[(int) mergedLines.size()] = {};
+		vector<bool> lineVisited((int) mergedLines.size());
 
-		localSquareMap[OVERSIZED_BOARD][OVERSIZED_BOARD] = {};
+		//localSquareMap[OVERSIZED_BOARD][OVERSIZED_BOARD] = {};
 		for(int i = 0; i < OVERSIZED_BOARD; i++) {
 			for(int j = 0; j < OVERSIZED_BOARD; j++) {
 				localSquareMap[i][j].occupied = false;
@@ -35,13 +35,13 @@ class DetermineChessBoard {
 		for (size_t i = 0; i < mergedLines.size(); i++) {
 			//if(lineVisited[i]) continue;
 			float gradient = mergedLines[i].gradient;
-			float intercept = mergedLines[i].intercept;
+			//float intercept = mergedLines[i].intercept;
 			
 			vector<LineMetadata> parallel_lines;
 			vector<LineMetadata> perpendicular_lines;
 			for (size_t j = 0; j < mergedLines.size(); j++) {
 				float gradient_next = mergedLines[j].gradient;
-				float intercept_next = mergedLines[j].intercept;
+				//float intercept_next = mergedLines[j].intercept;
 				
 				float angle = angleFromGradient(gradient, gradient_next);
 				//if(mergedLines[i].gradient < -1) printf("next: intercept: %f\n", mergedLines[i].intercept);
@@ -174,11 +174,11 @@ class DetermineChessBoard {
 		}
 		
 		if(squareMap[OVERSIZED_BOARD/2][OVERSIZED_BOARD/2].occupied) {
-			Square globalOrigin = squareMap[OVERSIZED_BOARD/2][OVERSIZED_BOARD/2];
+			//Square globalOrigin = squareMap[OVERSIZED_BOARD/2][OVERSIZED_BOARD/2];
 			Square tLocalOrigin = translateSquare(rotateSquare(localSquareMap[OVERSIZED_BOARD/2][OVERSIZED_BOARD/2], mapOffset), mapOffset);
 			if(tLocalOrigin.occupied) {
 
-				bool matched = false;
+				//bool matched = false;
 				Point localOffset;
 				if(updateOffset(mapOffset, &localSquareMap, localOffset)) {
 					

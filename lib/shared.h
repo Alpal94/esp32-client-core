@@ -163,7 +163,6 @@ FPoint rotatePoint(FPoint point, float angle) {
 	 *
 	*/
 
-	angle = angle;
 	float x = point.x * cos(angle) - point.y * sin(angle);
 	float y = point.x * sin(angle) + point.y * cos(angle);
 

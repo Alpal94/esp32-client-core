@@ -20,7 +20,7 @@ class DetermineChessPieces {
 	void findChessPieces(Mat& _gray_lastFrame, vector<vector<Point> >& _contours, vector<vector<Point> >& _drawing, vector<Square>& _localSquareList) {
 		drawing = _drawing;
 		gray_lastFrame = _gray_lastFrame;
-		contourMap[COLS][ROWS] = {};
+		//contourMap[COLS][ROWS] = {};
 		for(int i = 0; i < COLS; i++) {
 			for(int j = 0; j < ROWS; j++) {
 				contourMap[i][j].active = false;
@@ -39,7 +39,9 @@ class DetermineChessPieces {
 
 		int count = 0;
 		for (int i = 0; i < _localSquareList.size(); i++) {
-			Square square = rotateSquare(_localSquareList[i], {.rotation = -square.rotation});
+			//Replacing suspect code untested
+			//Square square = rotateSquare(_localSquareList[i], {.rotation = -square.rotation});
+			Square square = _localSquareList[i];
 			FPoint manualCenter = rotatePoint(_localSquareList[i].center, -square.rotation);
 			int centerX = (int) manualCenter.x;
 			int centerY = (int) manualCenter.y;
@@ -105,7 +107,7 @@ class DetermineChessPieces {
 	}
 	bool evaluateChessPiece(size_t contourIndex, size_t contourSubIndex, FPoint center) {
 		int count = 0;
-		FPoint original = pointToFPoint(contours[contourIndex][contourSubIndex]);
+		//FPoint original = pointToFPoint(contours[contourIndex][contourSubIndex]);
 		float angleSum = 0;
 		/*for(size_t i = contourSubIndex; i < contours[contourIndex].size() - 1; i++) {
 			FPoint first = pointToFPoint(contours[contourIndex][i]);

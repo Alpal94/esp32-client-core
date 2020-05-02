@@ -18,8 +18,8 @@ class CalibrateCamera {
 	void convertToBinary(Mat& image) {
 		int threshold_value = 146;
 		int threshold_type = 3;
-		int const max_value = 255;
-		int const max_type = 4;
+		//int const max_value = 255;
+		//int const max_type = 4;
 		int const max_binary_value = 255;
 
 		threshold( image, image, threshold_value, max_binary_value, threshold_type );
@@ -47,7 +47,7 @@ class CalibrateCamera {
 
 		printf("Cali running\n");
 		Size board_size = Size(board_width, board_height);
-		int board_n = board_width * board_height;
+		//int board_n = board_width * board_height;
 		bool found = false;
 		found = findChessboardCorners(grayImage, board_size, corners,  CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_FAST_CHECK | CALIB_CB_NORMALIZE_IMAGE);
 		if(found) {

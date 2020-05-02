@@ -9,7 +9,6 @@
 #define PRINT_CONTOURS true
 #define STREAM_CAMERA false
 #define CALIBRATE false
-#define BUFSIZ 1
 #define upper 90
 #define lower 10
 
@@ -47,18 +46,18 @@ class StreamProcessing {
 	Mat evaluateContours(float scale, vector<vector<Point> > &_contours) {
 		Mat dst, detected_edges;
 		int lowThreshold = 21;
-		const int max_lowThreshold = 100;
+		//const int max_lowThreshold = 100;
 		const int ratio = 3;
 		const int kernel_size = 3;
-		int thresh = 100;
-		int max_thresh = 255;
+		//int thresh = 100;
+		//int max_thresh = 255;
 		RNG rng(12345);
 		vector<Vec4i> hierarchy;
 
 		resize(gray_lastFrame, gray_lastFrame, Size(), scale, scale);
 		resize(lastFrame, lastFrame, Size(), scale, scale);
 
-		bool useLaplacianSharpening = false;
+		//bool useLaplacianSharpening = false;
 
 		blur( gray_lastFrame, detected_edges, Size(3,3) );
 		Canny( detected_edges, detected_edges, lowThreshold, lowThreshold*ratio, kernel_size );
@@ -69,7 +68,7 @@ class StreamProcessing {
 
 		Mat drawing;
 		bool isContours = false;
-		bool showTrueColour = false;
+		//bool showTrueColour = false;
 		if(isContours) {
 
 			drawing = Mat::zeros( detected_edges.size(), CV_8UC3 );
@@ -128,7 +127,7 @@ class StreamProcessing {
 
 	bool setRobotPosition(RobotPosition _position) {
 		printf("SETTING ROBOT POSITION\n");
-		CURL *curl;
+		/*CURL *curl;
 		CURLcode res;
 
 		curl = curl_easy_init();
@@ -149,7 +148,7 @@ class StreamProcessing {
 			//printf("Robot position set\n");
 			curl_easy_cleanup(curl);
 			return true;
-		}
+		}*/
 		return false;
 	}
 
@@ -206,8 +205,8 @@ class StreamProcessing {
 		}
 
 		for (size_t i = 0; i < lines.size(); i++) {
-			float gradient = lines[i].gradient;
-			float intercept = lines[i].intercept;
+			//float gradient = lines[i].gradient;
+			//float intercept = lines[i].intercept;
 		}
 
 		vector<LineMetadata> mergedLines = recalculateMergedLines(lines, 2.0, 0.06, 10);
@@ -218,7 +217,7 @@ class StreamProcessing {
 		}
 
 		if(NEW_LINE_POINTS) {
-			printf("NEW LINES: %ld\n", mergedLines.size());
+			//printf("NEW LINES: %ld\n", mergedLines.size());
 			for(size_t i = 0; i < mergedLines.size(); i++) {
 				if(mergedLines[i].line.size() > lower && mergedLines[i].line.size() < upper) 
 					squares.push_back(mergedLines[i].line);
@@ -239,10 +238,10 @@ class StreamProcessing {
 			for( size_t i = 0; i < lines.size(); i++) {
 
 				vector<Point> line = lines[i].line;
-				float gradient = lines[i].gradient;
-				float intercept = lines[i].intercept;
-				int gradCount = gradientFrequencies[gradientToIndex(gradient)];
-				int interceptCount = interceptFrequencies[interceptToIndex(intercept)];
+			//	float gradient = lines[i].gradient;
+			//	float intercept = lines[i].intercept;
+				//int gradCount = gradientFrequencies[gradientToIndex(gradient)];
+		//		int interceptCount = interceptFrequencies[interceptToIndex(intercept)];
 				squares.push_back(line);
 			}
 		}
@@ -257,9 +256,9 @@ class StreamProcessing {
 
 		) {
 		vector<LineMetadata> _mergedGradients;
-		bool gradientVisited[lines.size()] = {};
+		vector<bool> gradientVisited(lines.size());
 
-		if(DEBUG_MERGED_LINES) printf("Lines size: %ld\n", lines.size());
+		//if(DEBUG_MERGED_LINES) printf("Lines size: %ld\n", lines.size());
 		for (size_t i = 0; i < lines.size(); i++) {
 			float contourIndex = lines[i].contourIndex;
 			size_t startIndex = lines[i].startIndex;
@@ -271,13 +270,13 @@ class StreamProcessing {
 
 			vector<Point> newLinePoints;
 			for(size_t j = startIndex; j < endIndex; j++) {
-				float diff = calcDiff(lines[i].gradient, lines[i].intercept, contours[contourIndex][j].x, contours[contourIndex][j].y);
+			//	float diff = calcDiff(lines[i].gradient, lines[i].intercept, contours[contourIndex][j].x, contours[contourIndex][j].y);
 				//if(DEBUG_MERGED_LINES) printf("x: %d y: %d diff: %f\n", contours[contourIndex][j].x, contours[contourIndex][j].y, diff);
 
 				newLinePoints.push_back(contours[contourIndex][j]);
 			}
 
-			float count = 1; 
+			//float count = 1;
 			if(!gradientVisited[i]) {
 				float newGradient = 0.0, newIntercept = 0.0;
 				//if(DEBUG_MERGED_LINES) printf("START\n");
@@ -285,8 +284,8 @@ class StreamProcessing {
 					if(j == i) continue;
 					float oldGrad = lines[i].gradient;
 					float nextGrad = lines[j].gradient;
-					float oldIntercept = lines[i].intercept;
-					float nextIntercept = lines[j].intercept;
+			//		float oldIntercept = lines[i].intercept;
+			//		float nextIntercept = lines[j].intercept;
 
 					//if(oldGrad < -5) printf("intercept diff: %f\n", fabs(oldIntercept - nextIntercept));
 					if(angleFromGradient(oldGrad, nextGrad) > angleThreshold) continue;
@@ -523,7 +522,7 @@ class StreamProcessing {
 		//printf("diff");
 		if(!(sStart < 0 || sEnd < 0)) {
 			for ( size_t j = sStart; j < sEnd; j++) {
-				float diff = calcDiff(gradient, intercept, points_2[j].x, points_2[j].y);
+			//	float diff = calcDiff(gradient, intercept, points_2[j].x, points_2[j].y);
 				//printf("diff: %f ", diff);
 			}
 		}
@@ -545,10 +544,10 @@ class StreamProcessing {
 	static void drawSquares( Mat& image, const vector<vector<Point> >& squares, int rows, int cols) {
 		srand (0);
 		for (size_t i = 0; i < squares.size(); i++) {
-			const Point* p = &squares[i][0];
-			int n = (int) squares[i].size();
+			//const Point* p = &squares[i][0];
+		//	int n = (int) squares[i].size();
 
-			Scalar color = Scalar(rand() % 255, rand() % 255, rand() % 255);
+			//Scalar color = Scalar(rand() % 255, rand() % 255, rand() % 255);
 			Vec3b colour(rand() % 255, rand() % 255, rand() % 255);
 			for(size_t j = 0; j < squares[i].size(); j++) {
 				//circle(image, squares[i][j], 1, color, 1, LINE_4, 0);
