@@ -607,4 +607,19 @@ class StreamProcessing {
 			printf("%x", jpeg[i]);
 		}
 	}
+
+	Mat *executeChessBoardProcessing( Mat *currFrame) {
+		if(currFrame->data == NULL) {
+			printf("ERROR DECODING IMAGE");
+		} else {
+			lastFrame = *currFrame;
+			frameReference++;
+			processFrame();
+
+			if(CALIBRATE) {
+				calibrate.calculateCalibrationDataFromFrame( lastFrame );
+			}
+		}
+		return &lastFrame;
+	}
 };
