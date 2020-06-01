@@ -25,7 +25,7 @@
 	#define  LOG_TAG    "ESP32Client"
 	#define  ALOG(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
 #else
-	#define  ALOG(...)  printf("")
+	#define  ALOG(...)  printf(__VA_ARGS__)
 #endif
 
 using namespace cv;
