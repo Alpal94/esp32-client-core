@@ -4,9 +4,9 @@
 #include "lib/calibrate-camera.h"
 
 #define PRINT_LINES false
-#define GENERATE_LINES false
+#define GENERATE_LINES true
 #define NEW_LINE_POINTS false
-#define PRINT_CONTOURS true
+#define PRINT_CONTOURS false
 #define STREAM_CAMERA false
 #define CALIBRATE false
 #define upper 90
@@ -26,7 +26,7 @@ class StreamProcessing {
 	vector<vector<Point> > contours;
 
 
-	//const char* window_name = "Chess detector";
+	const char* window_name = "Chess detector";
 
 	Mat laplacianSharpening(Mat src) {
 		Mat kernel = (Mat_<float>(3,3) <<
@@ -81,6 +81,12 @@ class StreamProcessing {
 
 	}
 
+	void timer(auto start, char* message) {
+		auto elapsed = std::chrono::high_resolution_clock::now() - start;
+		long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+		ALOG("\nTime elapsed: %lld (%s)\n", microseconds, message);
+	}
+
 	RobotPosition robotPosition = { .x = 10, .y = 10, .z = 10};
 	void manageRobot() {
 
@@ -90,8 +96,11 @@ class StreamProcessing {
 		Mat detected_edges = evaluateContours(scale, contours);
 		vector<vector<Point> > squares;
 		squares.clear();
+
+		auto startDetermineLines = std::chrono::high_resolution_clock::now();
 		vector<LineMetadata> mergedLines = determineLines(detected_edges, squares);
-		determineChessboard.findChessboardSquares(
+		timer(startDetermineLines, (char*) "DetermineLines");
+		/*determineChessboard.findChessboardSquares(
 				mergedLines,
 				squares,
 				gray_lastFrame,
@@ -103,18 +112,17 @@ class StreamProcessing {
 			contours,
 			squares,
 			localSquareList
-		);
+		);*/
 		robotPosition = traverseChessboard(robotPosition);
 
 		drawSquares(lastFrame, squares, gray_lastFrame.rows, gray_lastFrame.cols);
 
 		resize(lastFrame, lastFrame, Size(), 0.5 / scale, 0.5 / scale);
 		resize(detected_edges, detected_edges, Size(), 0.5 / scale, 0.5 / scale);
-		//imshow (window_name, lastFrame);
 
 		auto elapsed = std::chrono::high_resolution_clock::now() - start;
 		long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-		ALOG("Time elapsed: %lld\n", microseconds);
+		ALOG("\nTime elapsed: %lld\n", microseconds);
 	}
 
 	RobotPosition traverseChessboard(RobotPosition position) {
@@ -166,6 +174,8 @@ class StreamProcessing {
 		vector<LineMetadata> lines;
 		int sampleSize = 5;
 
+		long long averageTime = 0;
+		auto contourTime = std::chrono::high_resolution_clock::now();
 		for ( size_t i = 0; i < contours.size(); i++) {
 			vector<Point> contour = contours[i];
 			approxPolyDP(contours[i], approx, arcLength(contours[i], true)*0.0001, false);
@@ -211,13 +221,16 @@ class StreamProcessing {
 			}
 		}
 
-		for (size_t i = 0; i < lines.size(); i++) {
-			//float gradient = lines[i].gradient;
-			//float intercept = lines[i].intercept;
-		}
+		auto elapsed = std::chrono::high_resolution_clock::now() - contourTime;
+		averageTime = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+		printf("\nAverage time: %lld contours: %ld (CONTOUR)\n", averageTime, contours.size());
 
-		vector<LineMetadata> mergedLines = recalculateMergedLines(lines, 2.0, 0.06, 10);
-		
+		contourTime = std::chrono::high_resolution_clock::now();
+			vector<LineMetadata> mergedLines = recalculateMergedLines(lines, 2.0, 0.06, 10);
+		elapsed = std::chrono::high_resolution_clock::now() - contourTime;
+		averageTime = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+		printf("Recalculate time: %lld (CONTOUR)\n", averageTime);	
+
 		vector<pair<float, float> > filteredGradients;
 		for (size_t i = 0; i < mergedLines.size(); i++) {
 			filteredGradients.push_back(make_pair(mergedLines[i].gradient, mergedLines[i].intercept));	
@@ -232,11 +245,17 @@ class StreamProcessing {
 		}
 
 		if(GENERATE_LINES) {
-			for (size_t i = 0; i < filteredGradients.size(); i++) {
+			for (size_t i = 0; i < mergedLines.size(); i++) {
 				vector<Point> line;
-				float gradient = filteredGradients[i].first;
-				float intercept = filteredGradients[i].second;
-				pureCalcLine(gradient, intercept, line);
+				float gradient = mergedLines[i].gradient;
+				float intercept = mergedLines[i].intercept;
+
+				size_t s = mergedLines[i].startIndex;
+				size_t e = mergedLines[i].endIndex;
+				size_t start = s < e ? s : e;
+				size_t end = s < e ? e : s;
+				printf("MERGED LINE: s: %ld  e: %ld\n", mergedLines[i].startIndex, mergedLines[i].endIndex);
+				pureCalcLine(gradient, intercept, line, start, end);
 				squares.push_back(line);
 			}
 		}
@@ -255,6 +274,10 @@ class StreamProcessing {
 		return mergedLines;
 	}
 
+	static bool sortLinesGradients(LineMetadata a, LineMetadata b) {
+		return a.gradient < b.gradient;
+	}
+
 	vector<LineMetadata> recalculateMergedLines(
 			vector<LineMetadata> lines,
 			float threshold,
@@ -264,7 +287,7 @@ class StreamProcessing {
 		) {
 		vector<LineMetadata> _mergedGradients;
 		vector<bool> gradientVisited(lines.size());
-
+		sort(lines.begin(), lines.end(), sortLinesGradients);
 		//if(DEBUG_MERGED_LINES) printf("Lines size: %ld\n", lines.size());
 		for (size_t i = 0; i < lines.size(); i++) {
 			float contourIndex = lines[i].contourIndex;
@@ -287,7 +310,7 @@ class StreamProcessing {
 			if(!gradientVisited[i]) {
 				float newGradient = 0.0, newIntercept = 0.0;
 				//if(DEBUG_MERGED_LINES) printf("START\n");
-				for (size_t j = 0; j < lines.size(); j++) {
+				for (size_t j = i; j < lines.size(); j++) {
 					if(j == i) continue;
 					float oldGrad = lines[i].gradient;
 					float nextGrad = lines[j].gradient;
@@ -295,7 +318,7 @@ class StreamProcessing {
 			//		float nextIntercept = lines[j].intercept;
 
 					//if(oldGrad < -5) printf("intercept diff: %f\n", fabs(oldIntercept - nextIntercept));
-					if(angleFromGradient(oldGrad, nextGrad) > angleThreshold) continue;
+					if(angleFromGradient(oldGrad, nextGrad) > angleThreshold) break;
 					if(lineSpacing(lines[i], lines[j]) > spacingThreshold) continue;
 					//printf("Grad: %f %f \n", nextGrad, oldGrad);
 
@@ -416,9 +439,7 @@ class StreamProcessing {
 		}
 	}
 
-	void pureCalcLine(float gradient, float intercept, vector<Point>& line) {
-		size_t start = 0;
-		size_t end = gray_lastFrame.cols;
+	void pureCalcLine(float gradient, float intercept, vector<Point>& line, size_t start=0, size_t end=COLS) {
 
 		for( size_t j = start; j < end; j++) {
 			float calcedY = (float) j * gradient + intercept;
@@ -437,6 +458,9 @@ class StreamProcessing {
 	size_t calcLineBestFit(float& gradient, float& intercept, int sampleSize, vector<Point> contour, int start) {
 		float threshold = 1.0;
 		if(sampleSize + start < contour.size()) {
+			size_t lineEnd = sampleSize + start;
+			if(pixelDist(contour[start], contour[lineEnd]) < 5) return 0;
+
 			if(!calcGradientIntercept(gradient, intercept, threshold, start, sampleSize + start, contour)) {
 				return false;
 			}
@@ -445,7 +469,6 @@ class StreamProcessing {
 			//if(pixelDist(contour[start], contour[sampleSize + start]) > 10) return 0;
 
 			//Find full extention of line
-			size_t lineEnd = sampleSize + start;
 			//float diff = 0;
 
 			//printf("Line end: %ld contour size: %ld\n", lineEnd, contour.size());
@@ -458,7 +481,6 @@ class StreamProcessing {
 				} else break;
 			}*/
 
-			if(pixelDist(contour[start], contour[lineEnd]) < 5) return 0;
 			/*if(!calcGradientIntercept(
 						gradient, intercept, threshold,
 						start, lineEnd, contour
@@ -578,7 +600,6 @@ class StreamProcessing {
 			sprintf(fileName, "recorded/jpeg%d.jpg", frameReference);
 			imwrite(fileName, lastFrame);
 		}
-		//waitKey(0);
 	}
 
 	void processJPEG( int nSize, char* jpeg) {
@@ -600,6 +621,8 @@ class StreamProcessing {
 			frameReference++;
 			processFrame();
 
+			imshow (window_name, lastFrame);
+			waitKey(0);	
 			if(CALIBRATE) {
 				calibrate.calculateCalibrationDataFromFrame( decodedImage );
 			}
