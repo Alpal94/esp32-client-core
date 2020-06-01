@@ -83,6 +83,9 @@ class StreamProcessing {
 
 	RobotPosition robotPosition = { .x = 10, .y = 10, .z = 10};
 	void manageRobot() {
+
+		auto start = std::chrono::high_resolution_clock::now();
+
 		float scale = 0.1;
 		Mat detected_edges = evaluateContours(scale, contours);
 		vector<vector<Point> > squares;
@@ -108,6 +111,10 @@ class StreamProcessing {
 		resize(lastFrame, lastFrame, Size(), 0.5 / scale, 0.5 / scale);
 		resize(detected_edges, detected_edges, Size(), 0.5 / scale, 0.5 / scale);
 		//imshow (window_name, lastFrame);
+
+		auto elapsed = std::chrono::high_resolution_clock::now() - start;
+		long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+		ALOG("Time elapsed: %lld\n", microseconds);
 	}
 
 	RobotPosition traverseChessboard(RobotPosition position) {
