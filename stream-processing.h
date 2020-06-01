@@ -100,7 +100,7 @@ class StreamProcessing {
 		auto startDetermineLines = std::chrono::high_resolution_clock::now();
 		vector<LineMetadata> mergedLines = determineLines(detected_edges, squares);
 		timer(startDetermineLines, (char*) "DetermineLines");
-		/*determineChessboard.findChessboardSquares(
+		determineChessboard.findChessboardSquares(
 				mergedLines,
 				squares,
 				gray_lastFrame,
@@ -112,7 +112,7 @@ class StreamProcessing {
 			contours,
 			squares,
 			localSquareList
-		);*/
+		);
 		robotPosition = traverseChessboard(robotPosition);
 
 		drawSquares(lastFrame, squares, gray_lastFrame.rows, gray_lastFrame.cols);
@@ -255,7 +255,7 @@ class StreamProcessing {
 				size_t start = s < e ? s : e;
 				size_t end = s < e ? e : s;
 				printf("MERGED LINE: s: %ld  e: %ld\n", mergedLines[i].startIndex, mergedLines[i].endIndex);
-				pureCalcLine(gradient, intercept, line, start, end);
+				pureCalcLine(gradient, intercept, line);
 				squares.push_back(line);
 			}
 		}
@@ -272,6 +272,9 @@ class StreamProcessing {
 			}
 		}
 		return mergedLines;
+	}
+	static bool sortLineSegments(pair<Point, Point> a, pair<Point, Point> b) {
+		return a.first.x < b.first.x;
 	}
 
 	static bool sortLinesGradients(LineMetadata a, LineMetadata b) {
@@ -295,8 +298,15 @@ class StreamProcessing {
 			size_t endIndex = lines[i].endIndex;
 			Point startPoint = contours[contourIndex][startIndex];
 			Point endPoint = contours[contourIndex][endIndex];
-			size_t newStartIndex = startPoint.x;
-			size_t newEndIndex = endPoint.x;
+			size_t newStartIndex = startPoint.x < endPoint.x ? startPoint.x : endPoint.x;
+			size_t newEndIndex = startPoint.x < endPoint.x ? endPoint.x : startPoint.x;
+			vector<pair<Point, Point> > segments;
+
+
+			segments.push_back(make_pair(
+				startPoint.x < endPoint.x ? startPoint : endPoint,
+				startPoint.x < endPoint.x ? endPoint : startPoint
+			));
 
 			vector<Point> newLinePoints;
 			for(size_t j = startIndex; j < endIndex; j++) {
@@ -328,6 +338,12 @@ class StreamProcessing {
 					if(nextStartIndex > newStartIndex) newStartIndex = contours[nextContourIndex][nextStartIndex].x;
 					if(nextEndIndex < newEndIndex) newEndIndex = contours[nextContourIndex][nextEndIndex].x;
 
+					size_t s = contours[nextContourIndex][nextStartIndex].x;
+					size_t e = contours[nextContourIndex][nextEndIndex].x;
+					segments.push_back(make_pair(
+						s < e ? contours[nextContourIndex][nextStartIndex] : contours[nextContourIndex][nextEndIndex],
+						s < e ? contours[nextContourIndex][nextEndIndex] : contours[nextContourIndex][nextStartIndex]
+					));
 
 					float tmpGradient, tmpIntercept;
 					if(calcGradientIntercept(tmpGradient, tmpIntercept, threshold,
@@ -345,8 +361,19 @@ class StreamProcessing {
 						}
 					}
 				}
+				bool continuous = true;
+				printf("First: START\n");
+				sort(segments.begin(), segments.end(), sortLineSegments);
+				for(int segment = 0; segment < segments.size()-1; segment++) {
+					printf("First: %d Second: %d VS First: %d Second: %d   CALC: %f DIFF: %d\n", segments[segment].first.x, segments[segment].second.x, segments[segment+1].first.x, segments[segment+1].second.x, pixelDist(segments[segment].second, segments[segment+1].first), segments[segment].second.x - segments[segment+1].first.x);
+					if(segments[segment].second.x - segments[segment+1].first.x < 0 && pixelDist(segments[segment].second, segments[segment+1].first) > 30) {
+						printf("CONTOURS FILTERED");
+						continuous = false;
+						break;
+					}
+				}
 				//if(DEBUG_MERGED_LINES) printf("END: grad: %f int: %f points: %ld\n", newGradient, newIntercept, newLinePoints.size());
-				if(newGradient && newLinePoints.size() > lower && newLinePoints.size() < upper) {
+				if(continuous && newGradient && newLinePoints.size() > lower && newLinePoints.size() < upper) {
 					//printf("Pushing back new intercept, grad\n");
 					_mergedGradients.push_back({
 							.startIndex = newStartIndex,
