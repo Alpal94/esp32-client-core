@@ -107,12 +107,12 @@ class StreamProcessing {
 				robotPosition
 		);
 		vector<Square> localSquareList = determineChessboard.getLocalSquareList();
-		determineChessPieces.findChessPieces(
+		/*determineChessPieces.findChessPieces(
 			gray_lastFrame,
 			contours,
 			squares,
 			localSquareList
-		);
+		);*/
 		robotPosition = traverseChessboard(robotPosition);
 
 		drawSquares(lastFrame, squares, gray_lastFrame.rows, gray_lastFrame.cols);
@@ -372,8 +372,10 @@ class StreamProcessing {
 						break;
 					}
 				}
+				float lineDistance = pixelDist(segments[0].first, segments[segments.size()].second);
 				//if(DEBUG_MERGED_LINES) printf("END: grad: %f int: %f points: %ld\n", newGradient, newIntercept, newLinePoints.size());
-				if(continuous && newGradient && newLinePoints.size() > lower && newLinePoints.size() < upper) {
+				if(continuous && newGradient && newLinePoints.size() > lower && newLinePoints.size() < upper && lineDistance > 30) {
+					printf("Line distance: %f\n", lineDistance);
 					//printf("Pushing back new intercept, grad\n");
 					_mergedGradients.push_back({
 							.startIndex = newStartIndex,
