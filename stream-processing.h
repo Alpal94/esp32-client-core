@@ -4,7 +4,7 @@
 #include "lib/calibrate-camera.h"
 
 #define PRINT_LINES false
-#define GENERATE_LINES true
+#define GENERATE_LINES false
 #define NEW_LINE_POINTS false
 #define PRINT_CONTOURS false
 #define STREAM_CAMERA false
@@ -18,6 +18,8 @@ class StreamProcessing {
 	private:
 	Mat lastFrame;
 	Mat gray_lastFrame;
+	Mat HSV_lastFrame;
+	Mat next_HSV_lastFrame;;
 	int frameReference = 0;
 	CalibrateCamera calibrate;
 	DetermineChessBoard determineChessboard;
@@ -104,15 +106,16 @@ class StreamProcessing {
 				mergedLines,
 				squares,
 				gray_lastFrame,
+				HSV_lastFrame,
 				robotPosition
 		);
 		vector<Square> localSquareList = determineChessboard.getLocalSquareList();
-		/*determineChessPieces.findChessPieces(
+		determineChessPieces.findChessPieces(
 			gray_lastFrame,
 			contours,
 			squares,
 			localSquareList
-		);*/
+		);
 		robotPosition = traverseChessboard(robotPosition);
 
 		drawSquares(lastFrame, squares, gray_lastFrame.rows, gray_lastFrame.cols);
@@ -623,6 +626,8 @@ class StreamProcessing {
 	void processFrame() {
 		if(!CALIBRATE) {
 			cvtColor( lastFrame, gray_lastFrame, COLOR_BGR2GRAY );
+			cvtColor(lastFrame, HSV_lastFrame, COLOR_BGR2HSV);
+			inRange( HSV_lastFrame, Scalar(0,0,150), Scalar(255,255,190), next_HSV_lastFrame );
 			//namedWindow(window_name, WINDOW_AUTOSIZE );
 			manageRobot();
 			char fileName[42];
@@ -650,8 +655,8 @@ class StreamProcessing {
 			frameReference++;
 			processFrame();
 
-			imshow (window_name, lastFrame);
-			waitKey(0);	
+			imshow (window_name, next_HSV_lastFrame);
+			waitKey(0);
 			if(CALIBRATE) {
 				calibrate.calculateCalibrationDataFromFrame( decodedImage );
 			}

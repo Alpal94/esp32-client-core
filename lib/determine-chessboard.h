@@ -6,6 +6,7 @@ using namespace std;
 class DetermineChessBoard {
 	private:	
 	Mat gray_lastFrame;
+	Mat HSV_lastFrame;
 	vector<Point> squareIntercepts;
 	RobotPosition currRobotPosition;
 	RobotPosition originalRobotPosition;
@@ -14,9 +15,14 @@ class DetermineChessBoard {
 	Square squareMap[OVERSIZED_BOARD][OVERSIZED_BOARD] = {};
 	Square localSquareMap[OVERSIZED_BOARD][OVERSIZED_BOARD] = {};
 
+	bool squareColourDetermined = false;
+	Vec3b blackSquareColour;
+	Vec3b whiteSquareColour;
+
 	public:
-	void findChessboardSquares(vector<LineMetadata> &mergedLines, vector<vector<Point> >& squares, Mat _gray_lastFrame, RobotPosition _robotPosition) {
+	void findChessboardSquares(vector<LineMetadata> &mergedLines, vector<vector<Point> >& squares, Mat _gray_lastFrame, Mat _HSV_lastFrame, RobotPosition _robotPosition) {
 		gray_lastFrame = _gray_lastFrame;
+		HSV_lastFrame = _HSV_lastFrame;
 		currRobotPosition = _robotPosition;
 
 		squareIntercepts.clear();
@@ -153,9 +159,11 @@ class DetermineChessBoard {
 								.southWest = southWest
 							};
 
-							//printf("No Squares: %d\n", noSquares);
+							printf("HSV: No Squares: %d\n", noSquares);
 							if(noSquares) {
 								printSquare(rotateSquare(square, { .rotation = 0 }));
+
+								squareColour(square);
 								insertSquare(&localSquareMap, square, { .spacing = 0, .rotation = xAxisAngle, .north = 0, .west = 0 }, Point(0,0));
 
 								//printf("East-West GRADIENTS: %f %f\n", squareCandidateParallel[j].gradient, mergedLines[i].gradient);
@@ -401,7 +409,23 @@ class DetermineChessBoard {
 			}
 		}
 	}
-	
+
+	bool firstSquareColourDetermined = false;
+	Vec3b tmpSquareColour;
+	void squareColour(Square _square) {
+		Vec3b currSquareColour = HSV_lastFrame.at<Vec3b>(Point((int) _square.northEast.x, (int) _square.northEast.y));
+		printf("HSV: %d %d %d\n", currSquareColour.val[0], currSquareColour.val[1], currSquareColour.val[2]);
+		currSquareColour = HSV_lastFrame.at<Vec3b>(Point((int) _square.northEast.x+5, (int) _square.northEast.y));
+		printf("HSV: %d %d %d\n", currSquareColour.val[0], currSquareColour.val[1], currSquareColour.val[2]);
+		currSquareColour = HSV_lastFrame.at<Vec3b>(Point((int) _square.northEast.x, (int) _square.northEast.y+5));
+		printf("HSV: %d %d %d\n", currSquareColour.val[0], currSquareColour.val[1], currSquareColour.val[2]);
+		if(!firstSquareColourDetermined) {
+			tmpSquareColour = currSquareColour;
+			firstSquareColourDetermined = true;
+			return;
+		}
+	}
+
 	void printSquare(Square _square) {
 		float northGradient = ((float) _square.northEast.y - (float) _square.northWest.y) / ((float) _square.northEast.x - (float) _square.northWest.x);
 		float northIntercept = (float) _square.northEast.y - northGradient * ((float) _square.northEast.x);
