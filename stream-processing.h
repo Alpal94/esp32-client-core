@@ -2,12 +2,14 @@
 #include "lib/determine-chessboard.h"
 #include "lib/determine-chess-peices.h"
 #include "lib/calibrate-camera.h"
+#include "lib/hsv-experiment.h"
 
 #define PRINT_LINES false
-#define GENERATE_LINES false
+#define GENERATE_LINES true
 #define NEW_LINE_POINTS false
 #define PRINT_CONTOURS false
 #define STREAM_CAMERA false
+#define HSV_EXPERIMENT false
 #define CALIBRATE false
 #define upper 90
 #define lower 10
@@ -19,14 +21,13 @@ class StreamProcessing {
 	Mat lastFrame;
 	Mat gray_lastFrame;
 	Mat HSV_lastFrame;
-	Mat next_HSV_lastFrame;;
+	Mat next_HSV_lastFrame;
 	int frameReference = 0;
 	CalibrateCamera calibrate;
 	DetermineChessBoard determineChessboard;
 	DetermineChessPieces determineChessPieces;
 
 	vector<vector<Point> > contours;
-
 
 	const char* window_name = "Chess detector";
 
@@ -106,7 +107,7 @@ class StreamProcessing {
 				mergedLines,
 				squares,
 				gray_lastFrame,
-				HSV_lastFrame,
+				lastFrame,
 				robotPosition
 		);
 		vector<Square> localSquareList = determineChessboard.getLocalSquareList();
@@ -623,11 +624,15 @@ class StreamProcessing {
 	}
 
 	public:
+	StreamProcessing() {
+		if(HSV_EXPERIMENT) hsv_init();
+			
+	}
 	void processFrame() {
 		if(!CALIBRATE) {
-			cvtColor( lastFrame, gray_lastFrame, COLOR_BGR2GRAY );
+			//cvtColor( lastFrame, gray_lastFrame, COLOR_BGR2GRAY );
 			cvtColor(lastFrame, HSV_lastFrame, COLOR_BGR2HSV);
-			inRange( HSV_lastFrame, Scalar(0,0,150), Scalar(255,255,190), next_HSV_lastFrame );
+			inRange( HSV_lastFrame, Scalar(0,0,126), Scalar(80,30,255), gray_lastFrame );
 			//namedWindow(window_name, WINDOW_AUTOSIZE );
 			manageRobot();
 			char fileName[42];
@@ -654,9 +659,11 @@ class StreamProcessing {
 			lastFrame = decodedImage;
 			frameReference++;
 			processFrame();
-
-			imshow (window_name, next_HSV_lastFrame);
-			waitKey(0);
+				if(HSV_EXPERIMENT)
+					hsv_processFrame(lastFrame);
+				else
+					imshow (window_name, lastFrame);
+				waitKey(0);
 			if(CALIBRATE) {
 				calibrate.calculateCalibrationDataFromFrame( decodedImage );
 			}

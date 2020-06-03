@@ -6,7 +6,7 @@ using namespace std;
 class DetermineChessBoard {
 	private:	
 	Mat gray_lastFrame;
-	Mat HSV_lastFrame;
+	Mat lastFrame;
 	vector<Point> squareIntercepts;
 	RobotPosition currRobotPosition;
 	RobotPosition originalRobotPosition;
@@ -15,20 +15,25 @@ class DetermineChessBoard {
 	Square squareMap[OVERSIZED_BOARD][OVERSIZED_BOARD] = {};
 	Square localSquareMap[OVERSIZED_BOARD][OVERSIZED_BOARD] = {};
 
+	vector<vector<Point> > drawing;
+
 	bool squareColourDetermined = false;
 	Vec3b blackSquareColour;
 	Vec3b whiteSquareColour;
 
 	public:
-	void findChessboardSquares(vector<LineMetadata> &mergedLines, vector<vector<Point> >& squares, Mat _gray_lastFrame, Mat _HSV_lastFrame, RobotPosition _robotPosition) {
+	void findChessboardSquares(vector<LineMetadata> &mergedLines, vector<vector<Point> >& squares, Mat _gray_lastFrame, Mat _lastFrame, RobotPosition _robotPosition) {
+		drawing = squares;
 		gray_lastFrame = _gray_lastFrame;
-		HSV_lastFrame = _HSV_lastFrame;
+		lastFrame = _lastFrame;
+
 		currRobotPosition = _robotPosition;
 
 		squareIntercepts.clear();
 		sort(mergedLines.begin(), mergedLines.end(), sortLinesGradient);
 
 		vector<bool> lineVisited((int) mergedLines.size());
+		printf("HSV: START\n");
 
 		//localSquareMap[OVERSIZED_BOARD][OVERSIZED_BOARD] = {};
 		for(int i = 0; i < OVERSIZED_BOARD; i++) {
@@ -159,10 +164,8 @@ class DetermineChessBoard {
 								.southWest = southWest
 							};
 
-							printf("HSV: No Squares: %d\n", noSquares);
 							if(noSquares) {
 								printSquare(rotateSquare(square, { .rotation = 0 }));
-
 								squareColour(square);
 								insertSquare(&localSquareMap, square, { .spacing = 0, .rotation = xAxisAngle, .north = 0, .west = 0 }, Point(0,0));
 
@@ -225,7 +228,8 @@ class DetermineChessBoard {
 		}
 
 		asciiPrintBoard(&localSquareMap);
-		squares.push_back(squareIntercepts);
+		drawing.push_back(squareIntercepts);
+		squares = drawing;
 	}
 
 	vector<Square> getLocalSquareList() {
@@ -234,6 +238,7 @@ class DetermineChessBoard {
 		for(int i = 0; i < OVERSIZED_BOARD; i++) {
 			for(int j = 0; j < OVERSIZED_BOARD; j++) {
 				if(localSquareMap[i][j].occupied) {
+
 					localSquareList.push_back(localSquareMap[i][j]);
 					printf("Center: %f %f\n", localSquareMap[i][j].center.x, localSquareMap[i][j].center.y);
 				}
@@ -413,17 +418,98 @@ class DetermineChessBoard {
 	bool firstSquareColourDetermined = false;
 	Vec3b tmpSquareColour;
 	void squareColour(Square _square) {
-		Vec3b currSquareColour = HSV_lastFrame.at<Vec3b>(Point((int) _square.northEast.x, (int) _square.northEast.y));
-		printf("HSV: %d %d %d\n", currSquareColour.val[0], currSquareColour.val[1], currSquareColour.val[2]);
-		currSquareColour = HSV_lastFrame.at<Vec3b>(Point((int) _square.northEast.x+5, (int) _square.northEast.y));
-		printf("HSV: %d %d %d\n", currSquareColour.val[0], currSquareColour.val[1], currSquareColour.val[2]);
-		currSquareColour = HSV_lastFrame.at<Vec3b>(Point((int) _square.northEast.x, (int) _square.northEast.y+5));
-		printf("HSV: %d %d %d\n", currSquareColour.val[0], currSquareColour.val[1], currSquareColour.val[2]);
+		printMarker(Point((int)_square.center.x, (int)_square.center.y), 10);
+
+
+
+		int minHue = 255; int maxHue = 0; int averageHue = 0;
+		int minSaturation = 255; int maxSaturation = 0; int averageSaturation = 0;
+		int minValue = 255; int maxValue = 0; int averageValue = 0;
+		
+		int sampleSize = (int) 4;
+		for(int i = -sampleSize; i < sampleSize; i++) {
+			for(int j = -sampleSize; j < sampleSize; j++) {
+				Vec3b currSquareColour = lastFrame.at<Vec3b>(Point((int) _square.center.x + i, (int) _square.center.y + j));
+
+
+				float blue = ((float) currSquareColour.val[0]) / 255;
+				float green = ((float) currSquareColour.val[1]) / 255;
+				float red = ((float) currSquareColour.val[2]) / 255;
+
+				float cmax = max( max(blue, green), red);
+				float cmin = min( min(blue, green), red);
+				float diff = cmax - cmin;
+
+				float hue, saturation, value;
+				if 	 (blue > green && blue > red) {
+					hue = fmod((60 * ((red - green)/diff) + 240) , 360.0);
+					saturation = cmax ? 100*diff/cmax : 0;
+					value = cmax * 100;
+				} else if(green > blue && green > red) {
+					hue = fmod((60 * ((blue - red)/diff) + 120) , 360.0);
+					saturation = cmax ? 100*diff/cmax : 0;
+					value = cmax * 100;
+				} else if(red > green && red > blue) {
+					hue = fmod((60 * ((green - blue)/diff) + 360) , 360.0);
+					saturation = cmax ? 100*diff/cmax : 0;
+					value = cmax * 100;
+				}
+
+
+
+				int cvHue, cvSaturation, cvValue;
+				cvHue = (int) (2 * hue);
+				cvSaturation = (int) (255 * saturation / 100);
+				cvValue = (int) (255 * value / 100);
+
+				cvHue = currSquareColour.val[0];
+				minHue = min(minHue, cvHue);
+				maxHue = max(maxHue, cvHue);
+				averageHue += cvHue;
+
+				cvSaturation = currSquareColour.val[1];
+				minSaturation = min(minSaturation, cvSaturation);
+				maxSaturation = max(maxSaturation, cvSaturation);
+				averageSaturation += cvSaturation;
+
+				cvValue = currSquareColour.val[2];
+				minValue = min(minValue, cvValue);
+				maxValue = max(maxValue, cvValue);
+				averageValue += cvValue;
+			}
+		}
+  
+		averageHue = averageHue /  pow(2 * sampleSize, 2);
+		averageSaturation = averageSaturation / pow(2 * sampleSize, 2);
+		averageValue = averageValue / pow(2 * sampleSize, 2);
+
+		printf("HSV: %d %d Average: %d %d %d Min: %d %d %d Max %d %d %d\n", (int) _square.center.x, (int) _square.center.y, averageHue, averageSaturation, averageValue, minHue, minSaturation, minValue, maxHue, maxSaturation, maxValue);
+
+
+
+
+
+
 		if(!firstSquareColourDetermined) {
-			tmpSquareColour = currSquareColour;
+			//tmpSquareColour = currSquareColour;
 			firstSquareColourDetermined = true;
 			return;
 		}
+	}
+
+	void printMarker(Point point, int size) {
+		vector<Point> marker;
+		marker.clear();
+
+		for(int x = -size; x < size; x++) {	
+			if(point.x+x < 0 || point.x+x > COLS) continue;
+			marker.push_back(Point(point.x+x, point.y));
+		}
+		for(int y = -size; y < size; y++) {	
+			if(point.y+y < 0 || point.y+y > ROWS) continue;
+			marker.push_back(Point(point.x, point.y+y));
+		}
+		drawing.push_back(marker);
 	}
 
 	void printSquare(Square _square) {
