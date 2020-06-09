@@ -52,8 +52,11 @@ static void hsv_init() {
 }
 
 static void hsv_processFrame(Mat frame) {
-	cvtColor(frame, frame_HSV, COLOR_BGR2HSV);
-	inRange(frame_HSV, Scalar(low_H, low_S, low_V), Scalar(high_H, high_S, high_V), frame_threshold);
+	//cvtColor(frame, frame_HSV, COLOR_BGR2HSV);
+	cvtColor(frame, frame_HSV, COLOR_BGR2GRAY);
+	//resize(frame_HSV, frame_HSV, Size(), 0.1);
+	//inRange(frame_HSV, Scalar(low_H, low_S, low_V), Scalar(high_H, high_S, high_V), frame_threshold);
+	inRange(frame_HSV, low_S, high_S, frame_threshold);
 	imshow(window_capture_name, frame);
 	imshow(window_detection_name, frame_threshold);
 }

@@ -5,7 +5,7 @@
 #include "lib/hsv-experiment.h"
 
 #define PRINT_LINES false
-#define GENERATE_LINES true
+#define GENERATE_LINES false
 #define NEW_LINE_POINTS false
 #define PRINT_CONTOURS false
 #define STREAM_CAMERA false
@@ -119,7 +119,7 @@ class StreamProcessing {
 		);
 		robotPosition = traverseChessboard(robotPosition);
 
-		drawSquares(lastFrame, squares, gray_lastFrame.rows, gray_lastFrame.cols);
+		if(!HSV_EXPERIMENT) drawSquares(lastFrame, squares, gray_lastFrame.rows, gray_lastFrame.cols);
 
 		resize(lastFrame, lastFrame, Size(), 0.5 / scale, 0.5 / scale);
 		resize(detected_edges, detected_edges, Size(), 0.5 / scale, 0.5 / scale);
@@ -630,9 +630,33 @@ class StreamProcessing {
 	}
 	void processFrame() {
 		if(!CALIBRATE) {
-			//cvtColor( lastFrame, gray_lastFrame, COLOR_BGR2GRAY );
+			/*cv::cvtColor(lastFrame, lastFrame, COLOR_BGR2YUV);
+			std::vector<cv::Mat> channels;
+			cv::split(lastFrame, channels);
+			cv::equalizeHist(channels[0], channels[0]);
+			cv::merge(channels, lastFrame);
+			cv::cvtColor(lastFrame, lastFrame, COLOR_YUV2BGR);*/
+			cvtColor( lastFrame, gray_lastFrame, COLOR_BGR2GRAY );
 			cvtColor(lastFrame, HSV_lastFrame, COLOR_BGR2HSV);
-			inRange( HSV_lastFrame, Scalar(0,0,126), Scalar(80,30,255), gray_lastFrame );
+			/*GaussianBlur( gray_lastFrame, gray_lastFrame, Size(5,5), 0 );
+			threshold( gray_lastFrame, gray_lastFrame, 0, 255, THRESH_BINARY | THRESH_OTSU);*/
+			Mat shadowFrame;
+			float dilationSize = 200;
+			resize(gray_lastFrame, shadowFrame, Size(), 1/dilationSize, 1/dilationSize);
+			resize(shadowFrame, shadowFrame, Size(), dilationSize, dilationSize);
+			/*
+			Mat element = getStructuringElement(MORPH_RECT, Size(2*dilationSize+1, 2*dilationSize+1), Point(dilationSize,dilationSize)); 
+			blur( gray_lastFrame, shadowFrame, Size(20,20) );
+			dilate( shadowFrame, shadowFrame, element);*/
+
+			Mat newImage;
+			absdiff(shadowFrame, gray_lastFrame, newImage);
+
+			imshow (window_name, newImage);
+			waitKey(0);
+			//adaptiveThreshold(gray_lastFrame, gray_lastFrame, 125, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 3, 5);
+			//inRange( HSV_lastFrame, Scalar(0,0,126), Scalar(80,30,255), gray_lastFrame );
+			//inRange( gray_lastFrame, Scalar(160), Scalar(255), gray_lastFrame );
 			//namedWindow(window_name, WINDOW_AUTOSIZE );
 			manageRobot();
 			char fileName[42];
@@ -659,10 +683,13 @@ class StreamProcessing {
 			lastFrame = decodedImage;
 			frameReference++;
 			processFrame();
-				if(HSV_EXPERIMENT)
+			if(HSV_EXPERIMENT) {
+				while(frameReference == 2) {
 					hsv_processFrame(lastFrame);
-				else
-					imshow (window_name, lastFrame);
+					waitKey(0);
+				}
+			} else
+				imshow (window_name, lastFrame);
 				waitKey(0);
 			if(CALIBRATE) {
 				calibrate.calculateCalibrationDataFromFrame( decodedImage );
