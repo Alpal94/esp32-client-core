@@ -117,7 +117,7 @@ class StreamProcessing {
 			squares,
 			localSquareList
 		);
-		robotPosition = traverseChessboard(robotPosition);
+		robotPosition = updateChessboard(robotPosition);
 
 		if(!HSV_EXPERIMENT) drawSquares(lastFrame, squares, gray_lastFrame.rows, gray_lastFrame.cols);
 
@@ -129,7 +129,7 @@ class StreamProcessing {
 		ALOG("\nTime elapsed: %lld\n", microseconds);
 	}
 
-	RobotPosition traverseChessboard(RobotPosition position) {
+	RobotPosition updateChessboard(RobotPosition position) {
 		RobotPosition nextPosition = position;
 		if(nextPosition.x < 20 && nextPosition.y < 20) {
 			nextPosition.x++;
@@ -140,13 +140,21 @@ class StreamProcessing {
 		}
 		if(true) return nextPosition;
 
-		if(setRobotPosition(position)) return nextPosition;
+		//if(setRobotPosition(position)) return nextPosition;
 		else return position;
+	}
+
+	RobotPosition traverseChessboard() {
+		for(float x = 0; x < 20; x+=0.01) {
+			for(float z = -10; z < 10; z+=0.01) {
+				setRobotPosition({.x = x, .y = 10, .z = z);
+			}
+		}
 	}
 
 	bool setRobotPosition(RobotPosition _position) {
 		printf("SETTING ROBOT POSITION\n");
-		/*CURL *curl;
+		CURL *curl;
 		CURLcode res;
 
 		curl = curl_easy_init();
@@ -167,7 +175,7 @@ class StreamProcessing {
 			//printf("Robot position set\n");
 			curl_easy_cleanup(curl);
 			return true;
-		}*/
+		}
 		return false;
 	}
 
