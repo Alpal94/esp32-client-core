@@ -8,7 +8,6 @@
 #define GENERATE_LINES false
 #define NEW_LINE_POINTS false
 #define PRINT_CONTOURS false
-#define STREAM_CAMERA false
 #define HSV_EXPERIMENT false
 #define CALIBRATE false
 #define upper 90
@@ -117,7 +116,7 @@ class StreamProcessing {
 			squares,
 			localSquareList
 		);
-		robotPosition = updateChessboard(robotPosition);
+		robotPosition = traverseChessboard(robotPosition);
 
 		if(!HSV_EXPERIMENT) drawSquares(lastFrame, squares, gray_lastFrame.rows, gray_lastFrame.cols);
 
@@ -129,28 +128,28 @@ class StreamProcessing {
 		ALOG("\nTime elapsed: %lld\n", microseconds);
 	}
 
-	RobotPosition updateChessboard(RobotPosition position) {
+	RobotPosition traverseChessboard(RobotPosition position) {
 		RobotPosition nextPosition = position;
-		if(nextPosition.x < 20 && nextPosition.y < 20) {
+		if(nextPosition.x < 10 && nextPosition.z < 20) {
 			nextPosition.x++;
-			nextPosition.y++;
+			nextPosition.z++;
 		} else {
 			nextPosition.x--;
-			nextPosition.y--;
+			nextPosition.z--;
 		}
-		if(true) return nextPosition;
-
-		//if(setRobotPosition(position)) return nextPosition;
+		nextPosition.y = 10;
+		return position;
+		if(setRobotPosition(nextPosition)) return nextPosition;
 		else return position;
 	}
 
-	RobotPosition traverseChessboard() {
-		for(float x = 0; x < 20; x+=0.01) {
-			for(float z = -10; z < 10; z+=0.01) {
-				setRobotPosition({.x = x, .y = 10, .z = z);
+	/*void traverseChessboard() {
+		for(float z = -5; z < 5; z+=2) {
+			for(float x = 10; x < 20; x+=0.2) {
+				setRobotPosition({.x = x, .y = 10, .z = z});
 			}
 		}
-	}
+	}*/
 
 	bool setRobotPosition(RobotPosition _position) {
 		printf("SETTING ROBOT POSITION\n");
@@ -159,8 +158,10 @@ class StreamProcessing {
 
 		curl = curl_easy_init();
 		if(curl) {
-			char *strBuffer;
+			printf("CURL Init\n");
+			char strBuffer[150];
 			sprintf(strBuffer,  "http://chessrobot.local/setpos?x=%f&y=%f&z=%f", _position.x, _position.y, _position.z);
+			printf("URL STARTED");
 			printf("THIS URL: %s\n", strBuffer);
 			curl_easy_setopt(curl, CURLOPT_URL, strBuffer);
 			res = curl_easy_perform(curl);
@@ -660,8 +661,8 @@ class StreamProcessing {
 			Mat newImage;
 			absdiff(shadowFrame, gray_lastFrame, newImage);
 
-			imshow (window_name, newImage);
-			waitKey(0);
+			//imshow (window_name, lastFrame);
+			//waitKey(0);
 			//adaptiveThreshold(gray_lastFrame, gray_lastFrame, 125, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 3, 5);
 			//inRange( HSV_lastFrame, Scalar(0,0,126), Scalar(80,30,255), gray_lastFrame );
 			//inRange( gray_lastFrame, Scalar(160), Scalar(255), gray_lastFrame );

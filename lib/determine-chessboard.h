@@ -44,6 +44,7 @@ class DetermineChessBoard {
 		
 		int noSquares = 0;
 		for (size_t i = 0; i < mergedLines.size(); i++) {
+			//pureCalcLine(mergedLines[i].gradient, mergedLines[i].intercept, squareIntercepts);
 			//if(lineVisited[i]) continue;
 			float gradient = mergedLines[i].gradient;
 			//float intercept = mergedLines[i].intercept;
@@ -56,8 +57,12 @@ class DetermineChessBoard {
 				
 				float angle = angleFromGradient(gradient, gradient_next);
 				//if(mergedLines[i].gradient < -1) printf("next: intercept: %f\n", mergedLines[i].intercept);
-				if(angle < 0.06) parallel_lines.push_back(mergedLines[j]);
-				if(angle > 1.10 && angle < 2.0) perpendicular_lines.push_back(mergedLines[j]);
+				if(angle < 0.06) {
+					parallel_lines.push_back(mergedLines[j]);
+				}
+				if(angle > 1.10 && angle < 2.0) {
+					perpendicular_lines.push_back(mergedLines[j]);
+				}
 			}
 			if(parallel_lines.size() > 1 && perpendicular_lines.size() > 1) {
 				float minSpacing = 25;
@@ -79,6 +84,8 @@ class DetermineChessBoard {
 						previous_line = parallel_lines[j];
 						//printf("FOUND PARALLEL\n");
 						squareCandidateParallel.push_back(parallel_lines[j]);
+
+						//pureCalcLine(parallel_lines[j].gradient, parallel_lines[j].intercept, squareIntercepts);
 					}
 				}
 				//printf("START\n");
@@ -94,6 +101,7 @@ class DetermineChessBoard {
 							previous_line = perpendicular_lines[j];
 							lineVisited[j] = true;
 							squareCandidatePerpendicular.push_back(perpendicular_lines[j]);
+							//pureCalcLine(perpendicular_lines[j].gradient, perpendicular_lines[j].intercept, squareIntercepts);
 							perpendicular++;
 						}
 					}
@@ -104,7 +112,7 @@ class DetermineChessBoard {
 					//printf("Possible square: %d %d %ld %ld\n", parallel, perpendicular, squareCandidateParallel.size(), squareCandidatePerpendicular.size());
 
 					for(int j = 0; j < squareCandidateParallel.size(); j++) {
-						for(int z = 0; z < squareCandidatePerpendicular.size() - 1; z+=2) {
+						for(int z = 0; z < squareCandidatePerpendicular.size() - 1; z+=1) {
 							float perpendicularXAxisAngle = angleFromGradient(squareCandidatePerpendicular[z].gradient, 0);
 							float parallelXAxisAngle = angleFromGradient(squareCandidateParallel[j].gradient, 0);
 							float xAxisAngle = perpendicularXAxisAngle < parallelXAxisAngle ? perpendicularXAxisAngle : parallelXAxisAngle;
@@ -139,7 +147,7 @@ class DetermineChessBoard {
 							float spacingEast = fPixelDist(northEast, southEast);
 
 							if(!checkSpacingIsSquare(spacingNorth, spacingSouth, spacingWest, spacingEast)) {
-								//printf("Warning: not a square.  Spacing NSWE: %f %f %f %f\n", spacingNorth, spacingSouth, spacingWest, spacingEast);
+								printf("Warning: not a square.  Spacing NSWE: %f %f %f %f\n", spacingNorth, spacingSouth, spacingWest, spacingEast);
 								continue;
 							}
 							
@@ -153,6 +161,7 @@ class DetermineChessBoard {
 
 
 							noSquares++;
+							printf("\nSquare spacing: %f\n", spacing);
 							Square square = {
 								.occupied = true,
 								.spacing = spacing,
@@ -163,7 +172,10 @@ class DetermineChessBoard {
 								.southEast = southEast,
 								.southWest = southWest
 							};
-
+							/*pureCalcLine(mergedLines[i].gradient, mergedLines[i].intercept, squareIntercepts);
+							pureCalcLine(squareCandidatePerpendicular[z].gradient, squareCandidatePerpendicular[z].intercept, squareIntercepts);
+							pureCalcLine(squareCandidatePerpendicular[z+1].gradient, squareCandidatePerpendicular[z+1].intercept, squareIntercepts);
+							pureCalcLine(squareCandidateParallel[j].gradient, squareCandidateParallel[j].intercept, squareIntercepts);*/
 							if(noSquares) {
 								printSquare(rotateSquare(square, { .rotation = 0 }));
 								squareColour(square);
@@ -418,7 +430,7 @@ class DetermineChessBoard {
 	bool firstSquareColourDetermined = false;
 	Vec3b tmpSquareColour;
 	void squareColour(Square _square) {
-		printMarker(Point((int)_square.center.x, (int)_square.center.y), 10);
+		//printMarker(Point((int)_square.center.x, (int)_square.center.y), 10);
 
 
 
