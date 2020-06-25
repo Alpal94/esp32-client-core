@@ -65,7 +65,10 @@ class DetermineChessPieces {
 						}
 						if(skip) continue;
 
-						if(contours[contourMap[x][y].contour].size() > 40) {
+						if(contours[contourMap[x][y].contour].size()) {
+							//printMarker(Point(x,y), drawing, 2);
+						}
+						if(contours[contourMap[x][y].contour].size() > 2) {
 
 							count++;
 							printf("COUNT: %d\n", count);
@@ -76,7 +79,7 @@ class DetermineChessPieces {
 									contourMap[x][y].contourSubIndex,
 									manualCenter
 								);
-								printMarker(Point(x,y), drawing, 2);
+								printMarker(Point(x,y), drawing, 5);
 							}
 						}
 						contoursEvaluated.push_back(contourMap[x][y].contour);
@@ -145,7 +148,7 @@ class DetermineChessPieces {
 		FPoint C = pointToFPoint(contours[contourIndex][start+2]);
 		FPoint _center = calculateCircle(A,B,C);
 		printf("Center: %f %f\n", _center.x, _center.y);
-		printMarker(Point((int)_center.x, (int)_center.y), drawing, 20);
+		//printMarker(Point((int)_center.x, (int)_center.y), drawing, 20);
 		return true;
 	}
 

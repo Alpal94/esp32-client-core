@@ -430,9 +430,7 @@ class DetermineChessBoard {
 	bool firstSquareColourDetermined = false;
 	Vec3b tmpSquareColour;
 	void squareColour(Square _square) {
-		//printMarker(Point((int)_square.center.x, (int)_square.center.y), 10);
-
-
+		printMarker(Point((int)_square.center.x, (int)_square.center.y), 10);
 
 		int minHue = 255; int maxHue = 0; int averageHue = 0;
 		int minSaturation = 255; int maxSaturation = 0; int averageSaturation = 0;
@@ -444,47 +442,23 @@ class DetermineChessBoard {
 				Vec3b currSquareColour = lastFrame.at<Vec3b>(Point((int) _square.center.x + i, (int) _square.center.y + j));
 
 
-				float blue = ((float) currSquareColour.val[0]) / 255;
-				float green = ((float) currSquareColour.val[1]) / 255;
-				float red = ((float) currSquareColour.val[2]) / 255;
+				cv::Mat3b hsv;
+				cv::Mat3b bgr(currSquareColour);
+				cvtColor(bgr, hsv, COLOR_BGR2HSV); 
+				Vec3b hsvColour = hsv.at<Vec3b>(0,0);
 
-				float cmax = max( max(blue, green), red);
-				float cmin = min( min(blue, green), red);
-				float diff = cmax - cmin;
+				int cvHue = hsvColour.val[0];
+				int cvSaturation = hsvColour.val[1];
+				int cvValue = hsvColour.val[2];
 
-				float hue, saturation, value;
-				if 	 (blue > green && blue > red) {
-					hue = fmod((60 * ((red - green)/diff) + 240) , 360.0);
-					saturation = cmax ? 100*diff/cmax : 0;
-					value = cmax * 100;
-				} else if(green > blue && green > red) {
-					hue = fmod((60 * ((blue - red)/diff) + 120) , 360.0);
-					saturation = cmax ? 100*diff/cmax : 0;
-					value = cmax * 100;
-				} else if(red > green && red > blue) {
-					hue = fmod((60 * ((green - blue)/diff) + 360) , 360.0);
-					saturation = cmax ? 100*diff/cmax : 0;
-					value = cmax * 100;
-				}
-
-
-
-				int cvHue, cvSaturation, cvValue;
-				cvHue = (int) (2 * hue);
-				cvSaturation = (int) (255 * saturation / 100);
-				cvValue = (int) (255 * value / 100);
-
-				cvHue = currSquareColour.val[0];
 				minHue = min(minHue, cvHue);
 				maxHue = max(maxHue, cvHue);
 				averageHue += cvHue;
 
-				cvSaturation = currSquareColour.val[1];
 				minSaturation = min(minSaturation, cvSaturation);
 				maxSaturation = max(maxSaturation, cvSaturation);
 				averageSaturation += cvSaturation;
 
-				cvValue = currSquareColour.val[2];
 				minValue = min(minValue, cvValue);
 				maxValue = max(maxValue, cvValue);
 				averageValue += cvValue;
