@@ -8,7 +8,7 @@
 #define GENERATE_LINES false
 #define NEW_LINE_POINTS false
 #define PRINT_CONTOURS false
-#define HSV_EXPERIMENT true
+#define HSV_EXPERIMENT false
 #define CALIBRATE false
 #define upper 90
 #define lower 10
@@ -18,6 +18,7 @@ using namespace cv;
 class StreamProcessing {
 	private:
 	Mat lastFrame;
+	Mat display;
 	Mat gray_lastFrame;
 	Mat HSV_lastFrame;
 	Mat next_HSV_lastFrame;
@@ -27,6 +28,7 @@ class StreamProcessing {
 	DetermineChessPieces determineChessPieces;
 
 	vector<vector<Point> > contours;
+	vector<Vec4i> hierarchy;
 
 	const char* window_name = "Chess detector";
 
@@ -54,7 +56,7 @@ class StreamProcessing {
 		//int thresh = 100;
 		//int max_thresh = 255;
 		RNG rng(12345);
-		vector<Vec4i> hierarchy;
+
 
 		resize(gray_lastFrame, gray_lastFrame, Size(), scale, scale);
 		resize(lastFrame, lastFrame, Size(), scale, scale);
@@ -107,12 +109,15 @@ class StreamProcessing {
 				squares,
 				gray_lastFrame,
 				lastFrame,
+				display,
 				robotPosition
 		);
 		vector<Square> localSquareList = determineChessboard.getLocalSquareList();
 		determineChessPieces.findChessPieces(
 			gray_lastFrame,
+			lastFrame,
 			contours,
+			hierarchy,
 			squares,
 			localSquareList
 		);
@@ -190,6 +195,7 @@ class StreamProcessing {
 		long long averageTime = 0;
 		auto contourTime = std::chrono::high_resolution_clock::now();
 		for ( size_t i = 0; i < contours.size(); i++) {
+			if(hierarchy[i][2] < 0) continue;
 			vector<Point> contour = contours[i];
 			approxPolyDP(contours[i], approx, arcLength(contours[i], true)*0.0001, false);
 			if(PRINT_CONTOURS) {
@@ -665,7 +671,7 @@ class StreamProcessing {
 			//waitKey(0);
 			//adaptiveThreshold(gray_lastFrame, gray_lastFrame, 125, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 3, 5);
 			//			inRange( lastFrame, Scalar(183,137,143), Scalar(255,255,255), gray_lastFrame );
-			inRange( lastFrame, Scalar(173,127,133), Scalar(255,255,255), gray_lastFrame );
+			//inRange( lastFrame, Scalar(173,127,133), Scalar(255,255,255), gray_lastFrame );
 			//inRange( HSV_lastFrame, Scalar(100,40,160), Scalar(150,100,255), gray_lastFrame );
 			//inRange( gray_lastFrame, Scalar(160), Scalar(205), gray_lastFrame );
 			//namedWindow(window_name, WINDOW_AUTOSIZE );
@@ -699,9 +705,10 @@ class StreamProcessing {
 					hsv_processFrame(lastFrame);
 					waitKey(0);
 				//}
-			} else
+			} else {
 				imshow (window_name, lastFrame);
 				waitKey(0);
+			}
 			if(CALIBRATE) {
 				calibrate.calculateCalibrationDataFromFrame( decodedImage );
 			}

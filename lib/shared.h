@@ -84,6 +84,10 @@ FPoint pointToFPoint(Point point) {
 	return { .x = (float) point.x, .y = (float) point.y };
 }
 
+Point fPointToPoint(FPoint point) {
+	return Point ((int) point.x, (int) point.y);
+}
+
 double fPixelDist( FPoint pt1, FPoint pt2 )
 {
 	double dx = pt1.x - pt2.x;

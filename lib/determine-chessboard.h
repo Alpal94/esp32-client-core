@@ -7,6 +7,7 @@ class DetermineChessBoard {
 	private:	
 	Mat gray_lastFrame;
 	Mat lastFrame;
+	Mat display;
 	vector<Point> squareIntercepts;
 	RobotPosition currRobotPosition;
 	RobotPosition originalRobotPosition;
@@ -22,10 +23,11 @@ class DetermineChessBoard {
 	Vec3b whiteSquareColour;
 
 	public:
-	void findChessboardSquares(vector<LineMetadata> &mergedLines, vector<vector<Point> >& squares, Mat _gray_lastFrame, Mat _lastFrame, RobotPosition _robotPosition) {
+	void findChessboardSquares(vector<LineMetadata> &mergedLines, vector<vector<Point> >& squares, Mat _gray_lastFrame, Mat &_lastFrame, Mat &_display, RobotPosition _robotPosition) {
 		drawing = squares;
 		gray_lastFrame = _gray_lastFrame;
 		lastFrame = _lastFrame;
+		display = _display;
 
 		currRobotPosition = _robotPosition;
 
@@ -242,6 +244,7 @@ class DetermineChessBoard {
 		asciiPrintBoard(&localSquareMap);
 		drawing.push_back(squareIntercepts);
 		squares = drawing;
+		_display = display;
 	}
 
 	vector<Square> getLocalSquareList() {
@@ -430,7 +433,7 @@ class DetermineChessBoard {
 	bool firstSquareColourDetermined = false;
 	Vec3b tmpSquareColour;
 	void squareColour(Square _square) {
-		printMarker(Point((int)_square.center.x, (int)_square.center.y), 10);
+		//printMarker(Point((int)_square.center.x, (int)_square.center.y), 10);
 
 		int minHue = 255; int maxHue = 0; int averageHue = 0;
 		int minSaturation = 255; int maxSaturation = 0; int averageSaturation = 0;
@@ -468,10 +471,12 @@ class DetermineChessBoard {
 		averageHue = averageHue /  pow(2 * sampleSize, 2);
 		averageSaturation = averageSaturation / pow(2 * sampleSize, 2);
 		averageValue = averageValue / pow(2 * sampleSize, 2);
-
+		
 		printf("HSV: %d %d Average: %d %d %d Min: %d %d %d Max %d %d %d\n", (int) _square.center.x, (int) _square.center.y, averageHue, averageSaturation, averageValue, minHue, minSaturation, minValue, maxHue, maxSaturation, maxValue);
 
 
+		cvtColor(lastFrame, display, COLOR_BGR2HSV);
+		inRange( display, Scalar(minHue,minSaturation,minValue), Scalar(maxHue,maxSaturation,maxValue), display );
 
 
 
