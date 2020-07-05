@@ -1,5 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h> 
 #include <sstream>
 #include <time.h>
@@ -74,6 +72,14 @@ struct ChessboardToCamera {
 	bool calced;
 	float distance;
 	float squareWidth;
+};
+
+struct MinMaxHSV {
+	Vec3b min;
+	Vec3b max;
+	Vec3b average;
+	Vec3b sum;
+	Vec3b comp;
 };
 
 float angleFromGradient(float gradient_first, float gradient_second) {

@@ -121,10 +121,37 @@ class StreamProcessing {
 			squares,
 			localSquareList
 		);
+
+		MinMaxHSV blackSquare = determineChessPieces.getSquareColour(0);
+		MinMaxHSV whiteSquare = determineChessPieces.getSquareColour(1);
+
+
 		robotPosition = traverseChessboard(robotPosition);
 
-		if(!HSV_EXPERIMENT) drawSquares(lastFrame, squares, gray_lastFrame.rows, gray_lastFrame.cols);
+		cvtColor( lastFrame, lastFrame, COLOR_BGR2HSV );
+		Mat mask;
+		Mat white;
+		Mat black;
+		Mat next;
 
+		lastFrame.copyTo(next);
+		inRange( lastFrame, Scalar(0,0,0), Scalar(255,255,255), mask );
+		cvtColor( mask, mask, COLOR_GRAY2BGR );
+		next.setTo(Scalar(0,0,0), mask);
+
+		inRange( lastFrame, whiteSquare.min, whiteSquare.max, mask );
+		cvtColor( mask, mask, COLOR_GRAY2BGR );
+		next.setTo(Scalar(0,255,0), mask);
+		//bitwise_or(mask, white, white);
+
+		inRange( lastFrame, blackSquare.min, blackSquare.max, mask );
+		cvtColor( mask, mask, COLOR_GRAY2BGR );
+		next.setTo(Scalar(0,0,255), mask);
+		//bitwise_and(mask, lastFrame, lastFrame);
+
+		//bitwise_or(black, white, lastFrame);
+		lastFrame = next;
+		if(!HSV_EXPERIMENT) drawSquares(lastFrame, squares, gray_lastFrame.rows, gray_lastFrame.cols);
 		resize(lastFrame, lastFrame, Size(), 0.5 / scale, 0.5 / scale);
 		resize(detected_edges, detected_edges, Size(), 0.5 / scale, 0.5 / scale);
 
