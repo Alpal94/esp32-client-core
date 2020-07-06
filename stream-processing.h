@@ -7,7 +7,7 @@
 #define PRINT_LINES false
 #define GENERATE_LINES false
 #define NEW_LINE_POINTS false
-#define PRINT_CONTOURS false
+#define PRINT_CONTOURS true
 #define HSV_EXPERIMENT false
 #define CALIBRATE false
 #define upper 90
@@ -49,7 +49,7 @@ class StreamProcessing {
 
 	Mat evaluateContours(float scale, vector<vector<Point> > &_contours) {
 		Mat dst, detected_edges;
-		int lowThreshold = 21;
+		int lowThreshold = 60;
 		//const int max_lowThreshold = 100;
 		const int ratio = 3;
 		const int kernel_size = 3;
@@ -63,8 +63,19 @@ class StreamProcessing {
 
 		//bool useLaplacianSharpening = false;
 
-		blur( gray_lastFrame, detected_edges, Size(3,3) );
+		bilateralFilter(lastFrame, detected_edges, 5, 100, 100);
+		cvtColor( detected_edges, detected_edges, COLOR_BGR2GRAY );
+		//adaptiveThreshold(detected_edges, detected_edges, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 3, 0);
+
+		//blur( detected_edges, detected_edges, Size(3,3) );
+		//threshold(detected_edges, detected_edges, 100, 255, THRESH_BINARY);
+		//resize(detected_edges, detected_edges, Size(), 0.5, 0.5);
+		//resize(detected_edges, detected_edges, Size(), 2.0, 2.0);
+
 		Canny( detected_edges, detected_edges, lowThreshold, lowThreshold*ratio, kernel_size );
+
+		imshow(window_name, detected_edges);
+		waitKey(0);
 
 		_contours.clear();
 		//CHAIN_APPROX_NONE
@@ -128,7 +139,7 @@ class StreamProcessing {
 
 		robotPosition = traverseChessboard(robotPosition);
 
-		cvtColor( lastFrame, lastFrame, COLOR_BGR2HSV );
+		//cvtColor( lastFrame, lastFrame, COLOR_BGR2HSV );
 		Mat mask;
 		Mat white;
 		Mat black;
@@ -150,7 +161,7 @@ class StreamProcessing {
 		//bitwise_and(mask, lastFrame, lastFrame);
 
 		//bitwise_or(black, white, lastFrame);
-		lastFrame = next;
+		//lastFrame = next;
 		if(!HSV_EXPERIMENT) drawSquares(lastFrame, squares, gray_lastFrame.rows, gray_lastFrame.cols);
 		resize(lastFrame, lastFrame, Size(), 0.5 / scale, 0.5 / scale);
 		resize(detected_edges, detected_edges, Size(), 0.5 / scale, 0.5 / scale);
@@ -222,9 +233,9 @@ class StreamProcessing {
 		long long averageTime = 0;
 		auto contourTime = std::chrono::high_resolution_clock::now();
 		for ( size_t i = 0; i < contours.size(); i++) {
-			if(hierarchy[i][2] < 0) continue;
+			//if(hierarchy[i][2] < 0) continue;
 			vector<Point> contour = contours[i];
-			approxPolyDP(contours[i], approx, arcLength(contours[i], true)*0.0001, false);
+			//approxPolyDP(contours[i], approx, arcLength(contours[i], true)*0.0001, false);
 			if(PRINT_CONTOURS) {
 				squares.push_back(contour);
 			}

@@ -24,8 +24,8 @@ class ColourAnalysis {
 
 		drawing = _drawing;
 		floodFill(point, contour, pieceColour, 0, true);
-		printf("\nMin: %d %d %d\n", pieceColour.min[0], pieceColour.min[1], pieceColour.min[2]);
-		printf("Max: %d %d %d\n", pieceColour.max[0], pieceColour.max[1], pieceColour.max[2]);
+		printf("\nHSVF Piece Min: %d %d %d\n", pieceColour.min[0], pieceColour.min[1], pieceColour.min[2]);
+		printf("HSVF Piece Max: %d %d %d\n", pieceColour.max[0], pieceColour.max[1], pieceColour.max[2]);
 		_drawing = drawing;
 	}
 
@@ -53,13 +53,13 @@ class ColourAnalysis {
 
 		floodFill(Point2f(center.x, center.y), _contour, squareColour[colourReferenceType], 3, true);
 
-		int margin = 10;
+		int margin = 20;
 		squareColour[colourReferenceType].min[0] -= margin;
-		squareColour[colourReferenceType].min[1] -= margin;
+		squareColour[colourReferenceType].min[1] -= 10;
 		squareColour[colourReferenceType].min[2] -= margin;
 
 		squareColour[colourReferenceType].max[0] += margin;
-		squareColour[colourReferenceType].max[1] += margin;
+		squareColour[colourReferenceType].max[1] += 10;
 		squareColour[colourReferenceType].max[2] += margin;
 
 		//Calc average 
@@ -247,6 +247,8 @@ class DetermineChessPieces {
 
 		squareColour[0] = squareColourAnalysis.getSquare(0);
 		squareColour[1] = squareColourAnalysis.getSquare(1);
+
+		cout << "HSVF Square 0 colour: min: " << squareColour[0].min << " max: " << squareColour[0].max << " Square 1 colour: min: " << squareColour[1].min << " max: " << squareColour[1].max << endl;
 		_drawing = drawing;
 	}
 
