@@ -121,13 +121,15 @@ class StreamProcessing {
 				robotPosition
 		);
 		vector<Square> localSquareList = determineChessboard.getLocalSquareList();
+		vector<Square> globalSquareList = determineChessboard.getGlobalSquareList();
 		determineChessPieces.findChessPieces(
 			gray_lastFrame,
 			lastFrame,
 			contours,
 			hierarchy,
 			squares,
-			localSquareList
+			localSquareList,
+			globalSquareList
 		);
 
 		MinMaxHSV blackSquare = determineChessPieces.getSquareColour(0);

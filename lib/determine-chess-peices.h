@@ -169,7 +169,15 @@ class DetermineChessPieces {
 	vector<Vec4i> hierarchy;
 
 	public:
-	void findChessPieces(Mat& _gray_lastFrame, Mat& _lastFrame, vector<vector<Point> >& _contours, vector<Vec4i> _hierarchy, vector<vector<Point> >& _drawing, vector<Square>& _localSquareList) {
+	void findChessPieces(
+			Mat& _gray_lastFrame,
+			Mat& _lastFrame,
+			vector<vector<Point> >& _contours,
+			vector<Vec4i> _hierarchy,
+			vector<vector<Point> >& _drawing,
+			vector<Square>& _localSquareList,
+			vector<Square>& _globalSquareList
+			) {
 		drawing.clear();
 		drawing = _drawing;
 		gray_lastFrame = _gray_lastFrame;
@@ -232,12 +240,14 @@ class DetermineChessPieces {
 									contourMap[x][y].contourSubIndex,
 									manualCenter
 								);
-								//printMarker(Point(x,y), drawing, 20);
+								if(evaluated) continue;
 							}
 						}
 						contoursEvaluated.push_back(contourMap[x][y].contour);
 					}
+					if(evaluated) continue;
 				}
+				if(evaluated) continue;
 			}
 
 			if(!containsContours) {

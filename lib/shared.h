@@ -60,6 +60,11 @@ struct Square {
 	FPoint northWest;
 	FPoint southEast;
 	FPoint southWest;
+
+	int x;
+	int y;
+	int global_x;
+	int global_y;
 };
 
 struct RobotPosition {

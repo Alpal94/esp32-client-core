@@ -253,13 +253,29 @@ class DetermineChessBoard {
 		for(int i = 0; i < OVERSIZED_BOARD; i++) {
 			for(int j = 0; j < OVERSIZED_BOARD; j++) {
 				if(localSquareMap[i][j].occupied) {
-
+					localSquareMap[i][j].x = i;
+					localSquareMap[i][j].y = j;
 					localSquareList.push_back(localSquareMap[i][j]);
 					printf("Center: %f %f\n", localSquareMap[i][j].center.x, localSquareMap[i][j].center.y);
 				}
 			}
 		}
 		return localSquareList;
+	}
+
+	vector<Square> getGlobalSquareList() {
+		vector<Square> globalSquareList;
+		for(int i = 0; i < OVERSIZED_BOARD; i++) {
+			for(int j = 0; j < OVERSIZED_BOARD; j++) {
+				if(squareMap[i][j].occupied) {
+
+					squareMap[i][j].x = i;
+					squareMap[i][j].y = j;
+					globalSquareList.push_back(squareMap[i][j]);
+				}
+			}
+		}
+		return globalSquareList;
 	}
 
 	private:	
@@ -377,6 +393,8 @@ class DetermineChessBoard {
 			FPoint vector = { .x = (squareCenter.x - originCenter.x) / spacing, .y = (squareCenter.y - originCenter.y) / spacing };
 			int posX = OVERSIZED_BOARD / 2 + (int) round(vector.x) + localOffset.x;
 			int posY = OVERSIZED_BOARD / 2 + (int) round(vector.y) + localOffset.y;
+			tSquare.global_x = posX;
+			tSquare.global_y = posY;
 
 			//printf("Is occupied: %d x: %d y: %d\n", (*_squareMap)[posX][posY].occupied, posX, posY);
 			if(!(*_squareMap)[posX][posY].occupied) {
@@ -388,6 +406,8 @@ class DetermineChessBoard {
 				//printf("Warning: OCCUPIED\n");
 			}
 		} else {
+			tSquare.global_x = 0;
+			tSquare.global_y = 0;
 			(*_squareMap)[OVERSIZED_BOARD/2][OVERSIZED_BOARD/2] = tSquare;
 			//printSquare(square);
 		}
