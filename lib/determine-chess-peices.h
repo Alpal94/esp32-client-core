@@ -20,13 +20,14 @@ class ColourAnalysis {
 		lastFrame = _lastFrame;
 	}
 
-	void executePieceAnalysis(Point2f point, vector<Point>& contour, vector<vector<Point> > &_drawing) {
+	bool executePieceAnalysis(Point2f point, vector<Point>& contour, vector<vector<Point> > &_drawing) {
 
 		drawing = _drawing;
 		floodFill(point, contour, pieceColour, 0, true);
 		printf("\nHSVF Piece Min: %d %d %d\n", pieceColour.min[0], pieceColour.min[1], pieceColour.min[2]);
 		printf("HSVF Piece Max: %d %d %d\n", pieceColour.max[0], pieceColour.max[1], pieceColour.max[2]);
 		_drawing = drawing;
+		return true;
 	}
 
 	MinMaxHSV squareColourAnalysis(Square _square, bool colourReferenceType, vector<vector<Point> > &_drawing) {
@@ -280,70 +281,16 @@ class DetermineChessPieces {
 		float angleMin = 0.15;
 		float angleMax = 0.3;
 		int lastIndex = contours[contourIndex].size() - 1;
-		printf("Contour: %d %d - %d %d\n", contours[contourIndex][0].x, contours[contourIndex][0].y, contours[contourIndex][lastIndex].x, contours[contourIndex][lastIndex].y);
-		printf("Hierarchy: %d %d %d %d\n", hierarchy[contourIndex][0], hierarchy[contourIndex][1], hierarchy[contourIndex][2], hierarchy[contourIndex][3]);
-		printf("Index: %ld\n", contourIndex);
 
 		bool isClosed = hierarchy[contourIndex][2] > 0;
 		if(isClosed) {
-			//printMarker(fPointToPoint(center), drawing, 3);
-			//
-			ColourAnalysis(lastFrame).executePieceAnalysis(
+			return ColourAnalysis(lastFrame).executePieceAnalysis(
 				Point2f(center.x, center.y),
 				contours[contourIndex],
 				drawing
 			);
 		}
-
-		/*for(size_t i = contourSubIndex; i < contours[contourIndex].size() - 1; i++) {
-			FPoint first = pointToFPoint(contours[contourIndex][i]);
-			FPoint second = center;
-			FPoint third = pointToFPoint(contours[contourIndex][i+1]);
-			count++;
-
-			float angle = angleFromPoints(first, center, third);
-
-			angleAscending = angleFromPoints(original, center, third);
-			ascendingPoint = third;
-
-			if(angleAscending >  angleMin) {
-				ascendingPoint = third;
-				break;
-			}
-
-			//printf("ASCENDING: angle: %f distance: %f %f %f\n", angleAscending, fPixelDist(first, center), fPixelDist(third, center), fPixelDist(first, third));
-		}
-		count = 0;
-		float angleDecending = 0;
-		for(size_t i = contourSubIndex; i > 1; i--) {
-			FPoint first = pointToFPoint(contours[contourIndex][i-1]);
-			FPoint second = center;
-			FPoint third = pointToFPoint(contours[contourIndex][i]);
-
-			count++;
-
-			float angle = angleFromPoints(first, center, third);
-			float absAngle = absAngleFromPoints(first, center, third);
-
-			angleDecending = angleFromPoints(original, center, third);
-			descendingPoint = third;
-
-			if(angleDecending >  angleMin) break;
-
-			//printf("DECENDING: angle: %f  distance: %f %f %f\n", angleDecending, fPixelDist(first, center), fPixelDist(third, center), fPixelDist(first, third));
-		}
-
-		int start = contourSubIndex;
-		FPoint A = ascendingPoint;
-		FPoint B = pointToFPoint(contours[contourIndex][start]);
-		FPoint C = descendingPoint;
-		FPoint _center = calculateCircle(A,B,C);
-		printf("Center: %f %f\n", _center.x, _center.y);
-		printMarker(fPointToPoint(_center), drawing, 10);
-		printMarker(fPointToPoint(A), drawing, 5);
-		printMarker(fPointToPoint(B), drawing, 5);
-		printMarker(fPointToPoint(C), drawing, 5);*/
-		return true;
+		return false;
 	}
 
 	FPoint calculateCircle(FPoint A, FPoint B, FPoint C) {

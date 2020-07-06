@@ -74,9 +74,6 @@ class StreamProcessing {
 
 		Canny( detected_edges, detected_edges, lowThreshold, lowThreshold*ratio, kernel_size );
 
-		imshow(window_name, detected_edges);
-		waitKey(0);
-
 		_contours.clear();
 		//CHAIN_APPROX_NONE
 		findContours( detected_edges, _contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
@@ -235,7 +232,7 @@ class StreamProcessing {
 		for ( size_t i = 0; i < contours.size(); i++) {
 			//if(hierarchy[i][2] < 0) continue;
 			vector<Point> contour = contours[i];
-			//approxPolyDP(contours[i], approx, arcLength(contours[i], true)*0.0001, false);
+			approxPolyDP(contours[i], approx, arcLength(contours[i], true)*0.0001, false);
 			if(PRINT_CONTOURS) {
 				squares.push_back(contour);
 			}
