@@ -1,4 +1,3 @@
-#define OVERSIZED_BOARD 16
 
 using namespace cv;
 using namespace std;

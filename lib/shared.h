@@ -16,6 +16,8 @@
 #define ROWS 120
 #define COLS 160
 
+#define OVERSIZED_BOARD 16
+
 #define CAM_RATIO 0.75f // fieldWidth / distance ==> 15cm / 20cm
 
 #ifdef FOR_ANDROID

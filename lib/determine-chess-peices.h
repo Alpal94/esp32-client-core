@@ -159,6 +159,7 @@ class DetermineChessPieces {
 	};
 
 	MinMaxHSV squareColour[2];
+	char chessBoard[OVERSIZED_BOARD][OVERSIZED_BOARD] = {};
 
 	Mat gray_lastFrame;
 	Mat lastFrame;
@@ -191,7 +192,7 @@ class DetermineChessPieces {
 		}
 		contours.clear();
 		contours = _contours;
-
+		for (int i = 0; i < OVERSIZED_BOARD; i++) for(int j = 0; j < OVERSIZED_BOARD; j++) chessBoard[i][j] = 0;
 		for (size_t i = 0; i < contours.size(); i++) {
 			for(size_t j = 0; j < contours[i].size(); j++) {
 				contourMap[contours[i][j].x][contours[i][j].y].active = true;
@@ -199,7 +200,13 @@ class DetermineChessPieces {
 				contourMap[contours[i][j].x][contours[i][j].y].contourSubIndex = j;
 			}
 		}
-
+		for (int i = 0; i < _globalSquareList.size(); i++) {
+			if(_globalSquareList[i].occupied) {
+				int x = _globalSquareList[i].x;
+				int y = _globalSquareList[i].y;
+				chessBoard[x][y] = '0';
+			}
+		}
 		int count = 0;
 		ColourAnalysis squareColourAnalysis(lastFrame);
 		for (int i = 0; i < _localSquareList.size(); i++) {
@@ -240,7 +247,12 @@ class DetermineChessPieces {
 									contourMap[x][y].contourSubIndex,
 									manualCenter
 								);
-								if(evaluated) continue;
+								if(evaluated) {
+									int x = square.global_x;
+									int y = square.global_y;
+									chessBoard[x][y] = 'u';
+									continue;
+								}
 							}
 						}
 						contoursEvaluated.push_back(contourMap[x][y].contour);
@@ -261,6 +273,16 @@ class DetermineChessPieces {
 
 		cout << "HSVF Square 0 colour: min: " << squareColour[0].min << " max: " << squareColour[0].max << " Square 1 colour: min: " << squareColour[1].min << " max: " << squareColour[1].max << endl;
 		_drawing = drawing;
+
+		printf("\n");
+		for(int x = 0; x < OVERSIZED_BOARD; x++) {
+			for(int y = 0; y < OVERSIZED_BOARD; y++) {
+				if(chessBoard[x][y] == '0') printf(".");
+				else if(chessBoard[x][y] == 'u') printf("+");
+				else printf(" ");
+			}
+			printf("\n");
+		}
 	}
 
 	MinMaxHSV getSquareColour(bool blackWhite) {
