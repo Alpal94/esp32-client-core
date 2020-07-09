@@ -17,20 +17,22 @@ class ColourAnalysis {
 
 	public:
 	ColourAnalysis(Mat& _lastFrame) {
+
 		lastFrame = _lastFrame;
+
 	}
 
 	bool executePieceAnalysis(Point2f point, vector<Point>& contour, vector<vector<Point> > &_drawing) {
 
 		drawing = _drawing;
 		floodFill(point, contour, pieceColour, 0, true);
-		printf("\nHSVF Piece Min: %d %d %d\n", pieceColour.min[0], pieceColour.min[1], pieceColour.min[2]);
-		printf("HSVF Piece Max: %d %d %d\n", pieceColour.max[0], pieceColour.max[1], pieceColour.max[2]);
+		//printf("\nHSVF Piece Min: %d %d %d\n", pieceColour.min[0], pieceColour.min[1], pieceColour.min[2]);
+		//printf("HSVF Piece Max: %d %d %d\n", pieceColour.max[0], pieceColour.max[1], pieceColour.max[2]);
 		_drawing = drawing;
 		return true;
 	}
 
-	MinMaxHSV squareColourAnalysis(Square _square, bool colourReferenceType, vector<vector<Point> > &_drawing) {
+	MinMaxHSV squareColourAnalysis(Square _square, int colourReferenceType, bool init, vector<vector<Point> > &_drawing) {
 		drawing = _drawing;
 		FPoint southEast = rotatePoint(_square.southEast, -_square.rotation);
 		FPoint northWest = rotatePoint(_square.northWest, -_square.rotation);
@@ -40,7 +42,6 @@ class ColourAnalysis {
 
 		float gradient = ((float) southEast.y - (float) northWest.y) / ((float) southEast.x - (float) northWest.x);
 		float intercept = (float) southEast.y - gradient * ((float) southEast.x);
-		printf("HSV Square %f %f: ", southEast.x, northWest.x);
 		float pixelOffset = 2;
 
 		int sumHue = 0;
@@ -52,17 +53,13 @@ class ColourAnalysis {
 		_contour.push_back(fPointToPoint(northWest));
 		_contour.push_back(fPointToPoint(northEast));
 
-		floodFill(Point2f(center.x, center.y), _contour, squareColour[colourReferenceType], 3, true);
+		if(colourReferenceType == 1) floodFill(Point2f(center.x, center.y), _contour, squareColour[colourReferenceType], 5, init);
+		else floodFill(Point2f(center.x, center.y), _contour, squareColour[colourReferenceType], 7, init);
+		
 
-		int margin = 20;
-		squareColour[colourReferenceType].min[0] -= margin;
-		squareColour[colourReferenceType].min[1] -= 10;
-		squareColour[colourReferenceType].min[2] -= margin;
-
-		squareColour[colourReferenceType].max[0] += margin;
-		squareColour[colourReferenceType].max[1] += 10;
-		squareColour[colourReferenceType].max[2] += margin;
-
+		/*imshow("hello", lastFrame);
+		waitKey(0);*/
+		//cout << "Type: " << colourReferenceType << " Square: " << squareColour[colourReferenceType].min << " " << squareColour[colourReferenceType].max << endl;
 		//Calc average 
 		for(int i = 0; i < 3; i++) squareColour[colourReferenceType].average[i] /= (float) count;
 
@@ -72,6 +69,25 @@ class ColourAnalysis {
 	}
 
 	MinMaxHSV getSquare(bool colourReferenceType) {
+		int margin = 1;
+		int marginNext = 1;
+
+		/*int minHue = squareColour[colourReferenceType].min[0];
+		int minSaturation = squareColour[colourReferenceType].min[1];
+		int minValue = squareColour[colourReferenceType].min[2];
+
+		int maxHue = squareColour[colourReferenceType].max[0];
+		int maxSaturation = squareColour[colourReferenceType].max[1];
+		int maxValue = squareColour[colourReferenceType].max[2];
+
+		squareColour[colourReferenceType].min[0] = (minHue - margin) > 0 ? minHue - margin : 0;
+		squareColour[colourReferenceType].min[1] = (minSaturation - marginNext) > 0 ? minSaturation - marginNext : 0;
+		squareColour[colourReferenceType].min[2] = (minValue - margin) > 0 ? minValue - margin : 0;
+
+		squareColour[colourReferenceType].max[0] = (maxHue + margin) < 179 ? maxHue + margin : 179;
+		squareColour[colourReferenceType].max[1] = (maxSaturation + marginNext) < 255 ? maxHue + marginNext : 255;
+		squareColour[colourReferenceType].max[2] = (maxValue + margin) < 255 ? maxValue + margin : 255;*/
+
 		return squareColour[colourReferenceType];
 	}
 
@@ -79,6 +95,7 @@ class ColourAnalysis {
 	void floodFill(Point2f point, vector<Point>& contour, MinMaxHSV &colourRange, float thresh, bool init) {
 		if(init) {
 			for(int i = 0; i < COLS; i++) memset(seen[i], 0, sizeof(seen[i]));
+			colourRange.hist.clear();
 			count = 0;
 		}
 		
@@ -88,27 +105,43 @@ class ColourAnalysis {
 
 		seen[(int)point.x][(int)point.y] = true;
 
-		printMarker(Point((int) point.x,(int) point.y), drawing, 1);
 		Mat3b hsv;
 		Mat3b bgr(lastFrame.at<Vec3b>(Point((int)point.x, (int)point.y)));
 		cvtColor(bgr, hsv, COLOR_BGR2HSV); 
 
 		Vec3b hsvColour = hsv.at<Vec3b>(0,0);
+		hsvColour = lastFrame.at<Vec3b>(Point((int)point.x, (int)point.y)); 
+		//if(thresh == 5) cout << "Type: " << hsvColour << endl;
 
+		string key = "   ";
+		for(int i = 0; i < 3; i++) key[i] = hsvColour[i];
+
+		try {
+			int res = colourRange.hist.at(key);
+		} catch (const std::out_of_range& oor) {
+			colourRange.hist.insert({key, 1});
+		}
 		if(init) {
+			if(thresh == 5) cout << "HSVS: INIT: " << hsvColour << endl;
 			colourRange.min = hsvColour;
 			colourRange.max = hsvColour;
 			colourRange.sum = hsvColour;
+
 			count++;
 		} else {
-			colourRange.max = maxHSV(colourRange.max, hsvColour);
-			colourRange.min = minHSV(colourRange.min, hsvColour);
+			if(thresh == 5) cout << "HSVS: Max: " << colourRange.max << " VS: " << hsvColour << endl;
+				
+			//maxDiff(colourRange.max, hsvColour) < 40 && maxDiff(colourRange.min, hsvColour) < 40
 
-			colourRange.sum[0] += hsvColour[0];
-			colourRange.sum[1] += hsvColour[1];
-			colourRange.sum[2] += hsvColour[2];
+				//if(thresh == 5) printMarker(Point((int) point.x,(int) point.y), drawing, 1);
+				colourRange.max = maxHSV(colourRange.max, hsvColour);
+				colourRange.min = minHSV(colourRange.min, hsvColour);
 
-			count++;
+				colourRange.sum[0] += hsvColour[0];
+				colourRange.sum[1] += hsvColour[1];
+				colourRange.sum[2] += hsvColour[2];
+
+				count++;
 		}
 
 		floodFill(Point2f(point.x+1, point.y), contour, colourRange, thresh, false);
@@ -122,6 +155,13 @@ class ColourAnalysis {
 		int maxSaturation = max(colour1[1], colour2[1]);
 		int maxValue = max(colour1[2], colour2[2]);
 		return Vec3b(maxHue, maxSaturation, maxValue); 
+	}
+
+	int maxDiff( Vec3b vec1, Vec3b vec2 ) {
+		int diff1 = abs(vec1[0] - vec2[0]);
+		int diff2 = abs( vec1[1] - vec2[1]);
+		int diff3 = abs( vec1[2] - vec2[2]);
+		return max(max(diff1, diff2), diff3);
 	}
 
 	Vec3b minHSV(Vec3b colour1, Vec3b colour2) {
@@ -179,11 +219,13 @@ class DetermineChessPieces {
 			vector<Square>& _localSquareList,
 			vector<Square>& _globalSquareList
 			) {
+
 		drawing.clear();
 		drawing = _drawing;
 		gray_lastFrame = _gray_lastFrame;
 		lastFrame = _lastFrame;
 		hierarchy = _hierarchy;
+
 		//contourMap[COLS][ROWS] = {};
 		for(int i = 0; i < COLS; i++) {
 			for(int j = 0; j < ROWS; j++) {
@@ -209,6 +251,8 @@ class DetermineChessPieces {
 		}
 		int count = 0;
 		ColourAnalysis squareColourAnalysis(lastFrame);
+
+		bool firstBlack = false, firstWhite = false;
 		for (int i = 0; i < _localSquareList.size(); i++) {
 			//Square square = rotateSquare(_localSquareList[i], {.rotation = -square.rotation});
 			Square square = _localSquareList[i];
@@ -263,8 +307,22 @@ class DetermineChessPieces {
 			}
 
 			if(!containsContours) {
-				printMarker(Point(centerX,centerY), drawing, 2);
-				MinMaxHSV result = squareColourAnalysis.squareColourAnalysis(square, i % 2, drawing);
+				if((square.x + square.y) % 2) printMarker(Point(centerX,centerY), drawing, 2);
+				else printMarker(Point(centerX,centerY), drawing, 4);
+				
+				bool init = false;
+				if((square.x + square.y) % 2 && !firstBlack) {
+					printf("Analysis: init black\n");
+					firstBlack = true;
+					init = true;
+				}
+				if((square.x + square.y) % 2 == 0 && !firstWhite) {
+					printf("Analysis: init white\n");
+					firstWhite = true;
+					init = true;
+				}
+				printf("Analysis: %d for %d %d and index: %d\n", (square.x + square.y) % 2, square.x, square.y, i);
+				MinMaxHSV result = squareColourAnalysis.squareColourAnalysis(square, (square.x + square.y) % 2, init, drawing);
 			}
 		}
 

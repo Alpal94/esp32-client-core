@@ -87,6 +87,7 @@ struct MinMaxHSV {
 	Vec3b average;
 	Vec3b sum;
 	Vec3b comp;
+	unordered_map<string, int> hist;
 };
 
 float angleFromGradient(float gradient_first, float gradient_second) {
