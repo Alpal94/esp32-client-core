@@ -115,9 +115,8 @@ class ColourAnalysis {
 
 		string key = "   ";
 		for(int i = 0; i < 3; i++) key[i] = hsvColour[i];
-
 		try {
-			int res = colourRange.hist.at(key);
+			colourRange.hist.at(key)++;
 		} catch (const std::out_of_range& oor) {
 			colourRange.hist.insert({key, 1});
 		}
