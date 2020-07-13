@@ -10,6 +10,7 @@
 #define PRINT_CONTOURS true
 #define HSV_EXPERIMENT false
 #define CALIBRATE false
+#define READ_CALIBRATION true
 #define upper 90
 #define lower 10
 
@@ -49,7 +50,7 @@ class StreamProcessing {
 
 	Mat evaluateContours(float scale, vector<vector<Point> > &_contours) {
 		Mat dst, detected_edges;
-		int lowThreshold = 60;
+		int lowThreshold = 40;
 		//const int max_lowThreshold = 100;
 		const int ratio = 3;
 		const int kernel_size = 3;
@@ -63,7 +64,7 @@ class StreamProcessing {
 
 		//bool useLaplacianSharpening = false;
 
-		bilateralFilter(lastFrame, detected_edges, 5, 100, 100);
+		bilateralFilter(lastFrame, detected_edges, 5, 30, 30);
 		cvtColor( detected_edges, detected_edges, COLOR_BGR2GRAY );
 		//adaptiveThreshold(detected_edges, detected_edges, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 3, 0);
 
@@ -108,8 +109,6 @@ class StreamProcessing {
 		Mat detected_edges = evaluateContours(scale, contours);
 		vector<vector<Point> > squares;
 		squares.clear();
-		imshow("good", HSV_lastFrame);
-		waitKey(0);
 		//cvtColor( lastFrame, lastFrame, COLOR_BGR2HSV );
 		auto startDetermineLines = std::chrono::high_resolution_clock::now();
 		vector<LineMetadata> mergedLines = determineLines(detected_edges, squares);
@@ -138,6 +137,18 @@ class StreamProcessing {
 		MinMaxHSV whiteSquare = determineChessPieces.getSquareColour(1);
 
 		cout << "Black square: " << blackSquare.min << " " << blackSquare.max << " White square: " << whiteSquare.min << " " << whiteSquare.max << endl;
+
+		printf("Unordered map size: %ld\n", blackSquare.hist.size());
+
+		for ( auto it = blackSquare.hist.begin(); it != blackSquare.hist.end(); ++it ) {
+			if(it->second > 1) {
+				string key = it->first;
+				uchar b = (uchar) key[0];
+				uchar g = (uchar) key[1];
+				uchar r = (uchar) key[2];
+				printf("Key: %d %d %d count: %d\n", b,g,r, it->second);
+			}
+		}
 
 		robotPosition = traverseChessboard(robotPosition);
 
@@ -179,8 +190,6 @@ class StreamProcessing {
 		next.setTo(Scalar(0,0,255), mask);
 		//bitwise_and(mask, lastFrame, lastFrame);
 
-		imshow ("hello", next);
-		waitKey(0);
 		//bitwise_or(black, white, lastFrame);
 		//lastFrame = next;
 		if(!HSV_EXPERIMENT) drawSquares(lastFrame, squares, gray_lastFrame.rows, gray_lastFrame.cols);
@@ -704,6 +713,7 @@ class StreamProcessing {
 	}
 	void processFrame() {
 		if(!CALIBRATE) {
+
 			/*cv::cvtColor(lastFrame, lastFrame, COLOR_BGR2YUV);
 			std::vector<cv::Mat> channels;
 			cv::split(lastFrame, channels);
@@ -711,7 +721,11 @@ class StreamProcessing {
 			cv::merge(channels, lastFrame);
 			cv::cvtColor(lastFrame, lastFrame, COLOR_YUV2BGR);*/
 
-			cvtColor( lastFrame, gray_lastFrame, COLOR_BGR2GRAY );
+			if(READ_CALIBRATION) {
+				calibrate.calculateFrameFromSavedCalibrationdata(lastFrame, gray_lastFrame);
+			} else {
+				cvtColor( lastFrame, gray_lastFrame, COLOR_BGR2GRAY );
+			}
 			cvtColor(lastFrame, HSV_lastFrame, COLOR_BGR2HSV);
 			/*GaussianBlur( gray_lastFrame, gray_lastFrame, Size(5,5), 0 );
 			threshold( gray_lastFrame, gray_lastFrame, 0, 255, THRESH_BINARY | THRESH_OTSU);
@@ -765,7 +779,9 @@ class StreamProcessing {
 					waitKey(0);
 				//}
 			} else {
-				imshow (window_name, lastFrame);
+				if(!CALIBRATE) {
+					imshow (window_name, lastFrame);
+				}
 				waitKey(0);
 			}
 			if(CALIBRATE) {

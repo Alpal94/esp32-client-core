@@ -114,7 +114,7 @@ class ColourAnalysis {
 		//if(thresh == 5) cout << "Type: " << hsvColour << endl;
 
 		string key = "   ";
-		for(int i = 0; i < 3; i++) key[i] = hsvColour[i];
+		for(int i = 0; i < 3; i++) key[i] = (uchar) hsvColour[i] / 5;
 		try {
 			colourRange.hist.at(key)++;
 		} catch (const std::out_of_range& oor) {

@@ -26,6 +26,7 @@ class CalibrateCamera {
 	}
 
 	void runCalibration() {
+		printf("CAL RUNNING CALIBRATION\n");
 		vector< Mat > rvecs, tvecs;
 		int flag = 0;
 		flag |= CALIB_FIX_K4;
@@ -69,6 +70,12 @@ class CalibrateCamera {
 	}
 
 	public:
+	void calculateFrameFromSavedCalibrationdata(Mat &_fullColourFrame, Mat &_grayTargetFrame) {
+		cvtColor( _fullColourFrame, _grayTargetFrame, COLOR_BGR2GRAY );
+		if(readCalibration(K, D)) {
+			undistortImage(_grayTargetFrame);
+		}
+	}
 	void calculateCalibrationDataFromFrame(Mat _fullColourFrame) {
 		frameReference++;
 		float scale = 0.1; 
