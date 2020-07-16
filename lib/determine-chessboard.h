@@ -66,7 +66,7 @@ class DetermineChessBoard {
 				}
 			}
 			if(parallel_lines.size() > 1 && perpendicular_lines.size() > 1) {
-				float minSpacing = 25;
+				float minSpacing = 5;
 				float maxSpacing = minSpacing + 10;
 				int parallel = 0;
 				vector<LineMetadata> squareCandidateParallel;

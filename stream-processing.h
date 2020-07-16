@@ -5,9 +5,9 @@
 #include "lib/hsv-experiment.h"
 
 #define PRINT_LINES false
-#define GENERATE_LINES false
+#define GENERATE_LINES true
 #define NEW_LINE_POINTS false
-#define PRINT_CONTOURS true
+#define PRINT_CONTOURS false
 #define HSV_EXPERIMENT false
 #define CALIBRATE false
 #define READ_CALIBRATION true
@@ -77,7 +77,7 @@ class StreamProcessing {
 
 		_contours.clear();
 		//CHAIN_APPROX_NONE
-		findContours( detected_edges, _contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+		findContours( detected_edges, _contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE);
 
 		Mat drawing;
 		bool isContours = false;
@@ -263,7 +263,9 @@ class StreamProcessing {
 		long long averageTime = 0;
 		auto contourTime = std::chrono::high_resolution_clock::now();
 		for ( size_t i = 0; i < contours.size(); i++) {
-			//if(hierarchy[i][2] < 0) continue;
+			if(hierarchy[i][2] < 0) continue;
+			//if(i < 104 || i > 114) continue;
+			printf("Contour index: %ld\n", i);
 			vector<Point> contour = contours[i];
 			approxPolyDP(contours[i], approx, arcLength(contours[i], true)*0.0001, false);
 			if(PRINT_CONTOURS) {
@@ -273,9 +275,13 @@ class StreamProcessing {
 			bool doCalcLines = true;
 			if(doCalcLines) {
 				for ( size_t j = 0; j < contour.size(); j++) {
+					//if(!(j > 5 && j < 11)) continue;
+					//printMarker(contour[11], squares, 10);
 					size_t lineEnd = calcLineBestFit(gradient, intercept, sampleSize, contour, j);
+					printf("PASS: Gradient: Good: %f %f Lineend: %ld\n", fabs(gradient), intercept, lineEnd);
 
 					if(lineEnd) {
+						printf("PASS: Accepting\n");
 						vector<Point> line;
 						lines.push_back({
 							.startIndex = j,
@@ -308,48 +314,56 @@ class StreamProcessing {
 			}
 		}
 
+
 		auto elapsed = std::chrono::high_resolution_clock::now() - contourTime;
 		averageTime = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
 		printf("\nAverage time: %lld contours: %ld (CONTOUR)\n", averageTime, contours.size());
 
 		contourTime = std::chrono::high_resolution_clock::now();
-			vector<LineMetadata> mergedLines = recalculateMergedLines(lines, 2.0, 0.06, 10);
-		elapsed = std::chrono::high_resolution_clock::now() - contourTime;
-		averageTime = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-		printf("Recalculate time: %lld (CONTOUR)\n", averageTime);	
 
-		vector<pair<float, float> > filteredGradients;
-		for (size_t i = 0; i < mergedLines.size(); i++) {
-			filteredGradients.push_back(make_pair(mergedLines[i].gradient, mergedLines[i].intercept));	
-		}
+		vector<LineMetadata> mergedLines;
+		if(true) {
+			mergedLines = recalculateMergedLines(lines, 2.0, 0.06, 10);
+			elapsed = std::chrono::high_resolution_clock::now() - contourTime;
+			averageTime = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+			printf("Recalculate time: %lld (CONTOUR)\n", averageTime);	
 
-		if(NEW_LINE_POINTS) {
-			//printf("NEW LINES: %ld\n", mergedLines.size());
-			for(size_t i = 0; i < mergedLines.size(); i++) {
-				if(mergedLines[i].line.size() > lower && mergedLines[i].line.size() < upper) 
-					squares.push_back(mergedLines[i].line);
-			}
-		}
-
-		if(GENERATE_LINES) {
+			vector<pair<float, float> > filteredGradients;
 			for (size_t i = 0; i < mergedLines.size(); i++) {
-				vector<Point> line;
-				float gradient = mergedLines[i].gradient;
-				float intercept = mergedLines[i].intercept;
+				filteredGradients.push_back(make_pair(mergedLines[i].gradient, mergedLines[i].intercept));	
+			}
 
-				size_t s = mergedLines[i].startIndex;
-				size_t e = mergedLines[i].endIndex;
-				size_t start = s < e ? s : e;
-				size_t end = s < e ? e : s;
-				printf("MERGED LINE: s: %ld  e: %ld\n", mergedLines[i].startIndex, mergedLines[i].endIndex);
-				pureCalcLine(gradient, intercept, line);
-				squares.push_back(line);
+			if(NEW_LINE_POINTS) {
+				//printf("NEW LINES: %ld\n", mergedLines.size());
+				for(size_t i = 0; i < mergedLines.size(); i++) {
+					if(mergedLines[i].line.size() > lower && mergedLines[i].line.size() < upper) 
+						squares.push_back(mergedLines[i].line);
+				}
+			}
+
+			if(GENERATE_LINES) {
+				for (size_t i = 0; i < mergedLines.size(); i++) {
+					vector<Point> line;
+					float gradient = mergedLines[i].gradient;
+					float intercept = mergedLines[i].intercept;
+
+					size_t s = mergedLines[i].startIndex;
+					size_t e = mergedLines[i].endIndex;
+					size_t start = s < e ? s : e;
+					size_t end = s < e ? e : s;
+					printf("MERGED LINE: s: %ld  e: %ld\n", mergedLines[i].startIndex, mergedLines[i].endIndex);
+					pureCalcLine(gradient, intercept, line);
+					squares.push_back(line);
+				}
 			}
 		}
-
 		if(PRINT_LINES) {
 			for( size_t i = 0; i < lines.size(); i++) {
 
+				for(size_t j = 0; j < lines[i].line.size(); j++) {
+					printf("x: %d y: %d ", lines[i].line[j].x, lines[i].line[j].y);
+				}
+				printf("\n");
 				vector<Point> line = lines[i].line;
 			//	float gradient = lines[i].gradient;
 			//	float intercept = lines[i].intercept;
@@ -389,6 +403,9 @@ class StreamProcessing {
 			size_t newEndIndex = startPoint.x < endPoint.x ? endPoint.x : startPoint.x;
 			vector<pair<Point, Point> > segments;
 
+			float gradient = lines[i].gradient;
+			float intercept = lines[i].intercept;
+			if(gradient > 5) printf("OK Merged: GOOD: %f %f\n", gradient, intercept);
 
 			segments.push_back(make_pair(
 				startPoint.x < endPoint.x ? startPoint : endPoint,
@@ -415,6 +432,7 @@ class StreamProcessing {
 			//		float nextIntercept = lines[j].intercept;
 
 					//if(oldGrad < -5) printf("intercept diff: %f\n", fabs(oldIntercept - nextIntercept));
+					if(nextGrad > 10 && oldGrad > 10) printf("Vertical gradient: %f %f\n", nextGrad, oldGrad);
 					if(angleFromGradient(oldGrad, nextGrad) > angleThreshold) break;
 					if(lineSpacing(lines[i], lines[j]) > spacingThreshold) continue;
 					//printf("Grad: %f %f \n", nextGrad, oldGrad);
@@ -461,7 +479,7 @@ class StreamProcessing {
 				}
 				float lineDistance = pixelDist(segments[0].first, segments[segments.size()].second);
 				//if(DEBUG_MERGED_LINES) printf("END: grad: %f int: %f points: %ld\n", newGradient, newIntercept, newLinePoints.size());
-				if(continuous && newGradient && newLinePoints.size() > lower && newLinePoints.size() < upper && lineDistance > 30) {
+				if(continuous && newLinePoints.size() > lower && newLinePoints.size() < upper && lineDistance > 30) {
 					printf("Line distance: %f\n", lineDistance);
 					//printf("Pushing back new intercept, grad\n");
 					_mergedGradients.push_back({
@@ -536,7 +554,7 @@ class StreamProcessing {
 
 		bool isGenerated = true;
 		if(isGenerated && pixelDist(start, end) > 0) {
-			for( size_t j = jStart; j < jEnd; j++) {
+			for( size_t j = jStart; j <= jEnd; j++) {
 				float calcedY = (float) j * gradient + intercept;
 				Point linePoint(j, (int) calcedY);
 				
@@ -546,6 +564,11 @@ class StreamProcessing {
 						linePoint.x >= 0 ) {
 					
 					line.push_back(linePoint);
+				}
+			}
+			if(jStart == jEnd && gradient > 10) {
+				for( size_t j = startIndex; j < endIndex; j++) {
+					line.push_back(contour[j]);		
 				}
 			}
 		} else {
@@ -568,6 +591,12 @@ class StreamProcessing {
 				
 				line.push_back(linePoint);
 			}
+			if(gradient >= 999 && calcedY > 0 && calcedY < COLS) {
+				for(size_t z = 0; z < ROWS; z++) {
+					Point verticalPoint(j, z);
+					line.push_back(verticalPoint);
+				}
+			}
 		}
 	}
 
@@ -575,11 +604,14 @@ class StreamProcessing {
 		float threshold = 1.0;
 		if(sampleSize + start < contour.size()) {
 			size_t lineEnd = sampleSize + start;
-			if(pixelDist(contour[start], contour[lineEnd]) < 5) return 0;
+			//if(pixelDist(contour[start], contour[lineEnd]) < 5) return 0;
 
+			
 			if(!calcGradientIntercept(gradient, intercept, threshold, start, sampleSize + start, contour)) {
 				return false;
 			}
+
+			if(fabs(gradient) > 5) printf("OK Best: After calc line: %f %f\n", gradient, intercept);
 
 			//Check pixel dist is not too small 
 			//if(pixelDist(contour[start], contour[sampleSize + start]) > 10) return 0;
@@ -640,9 +672,13 @@ class StreamProcessing {
 		}
 
 		gradient = ((float) noPoints * (float) sumXY - (float) sumX * (float) sumY) / ((float) noPoints * (float) sumX2 - (float) pow((float) sumX, 2));
+		if(isnan(gradient)) gradient = 999;
+
 		intercept = ((float) sumY - gradient * sumX) / noPoints;
 
-		if(!gradient || isnan(gradient) || isnan(intercept)) return false;
+		if(isnan(gradient) || isnan(intercept)) return false;
+
+		if(fabs(gradient) > 0.1 && fabs(gradient) < 999) return false;
 
 		for ( size_t j = start; j < end; j++) {
 			float diff = calcDiff(gradient, intercept, points_1[j].x, points_1[j].y);
@@ -722,11 +758,10 @@ class StreamProcessing {
 			cv::cvtColor(lastFrame, lastFrame, COLOR_YUV2BGR);*/
 
 			if(READ_CALIBRATION) {
-				calibrate.calculateFrameFromSavedCalibrationdata(lastFrame, gray_lastFrame);
-			} else {
-				cvtColor( lastFrame, gray_lastFrame, COLOR_BGR2GRAY );
+				calibrate.calculateFrameFromSavedCalibrationdata(lastFrame);
 			}
 			cvtColor(lastFrame, HSV_lastFrame, COLOR_BGR2HSV);
+			cvtColor(lastFrame, gray_lastFrame, COLOR_BGR2GRAY );
 			/*GaussianBlur( gray_lastFrame, gray_lastFrame, Size(5,5), 0 );
 			threshold( gray_lastFrame, gray_lastFrame, 0, 255, THRESH_BINARY | THRESH_OTSU);
 			Mat shadowFrame;
@@ -812,5 +847,20 @@ class StreamProcessing {
 			}
 		}
 		return &lastFrame;
+	}
+
+	void printMarker(Point point, vector<vector<Point> >& drawing, int size) {
+		vector<Point> marker;
+		marker.clear();
+
+		for(int x = -size; x < size; x++) {	
+			if(point.x+x < 0 || point.x+x > COLS) continue;
+			marker.push_back(Point(point.x+x, point.y));
+		}
+		for(int y = -size; y < size; y++) {	
+			if(point.y+y < 0 || point.y+y > ROWS) continue;
+			marker.push_back(Point(point.x, point.y+y));
+		}
+		drawing.push_back(marker);
 	}
 };

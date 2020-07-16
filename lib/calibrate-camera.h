@@ -70,10 +70,9 @@ class CalibrateCamera {
 	}
 
 	public:
-	void calculateFrameFromSavedCalibrationdata(Mat &_fullColourFrame, Mat &_grayTargetFrame) {
-		cvtColor( _fullColourFrame, _grayTargetFrame, COLOR_BGR2GRAY );
+	void calculateFrameFromSavedCalibrationdata(Mat &_fullColourFrame) {
 		if(readCalibration(K, D)) {
-			undistortImage(_grayTargetFrame);
+			undistortImage(_fullColourFrame);
 		}
 	}
 	void calculateCalibrationDataFromFrame(Mat _fullColourFrame) {
