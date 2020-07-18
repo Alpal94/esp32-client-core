@@ -11,8 +11,8 @@
 #define HSV_EXPERIMENT false
 #define CALIBRATE false
 #define READ_CALIBRATION true
-#define upper 90
-#define lower 10
+#define upper 999999
+#define lower 0
 
 #define DEBUG_MERGED_LINES true
 using namespace cv;
@@ -77,7 +77,7 @@ class StreamProcessing {
 
 		_contours.clear();
 		//CHAIN_APPROX_NONE
-		findContours( detected_edges, _contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE);
+		findContours( detected_edges, _contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
 
 		Mat drawing;
 		bool isContours = false;
@@ -113,7 +113,7 @@ class StreamProcessing {
 		auto startDetermineLines = std::chrono::high_resolution_clock::now();
 		vector<LineMetadata> mergedLines = determineLines(detected_edges, squares);
 		timer(startDetermineLines, (char*) "DetermineLines");
-		determineChessboard.findChessboardSquares(
+		/*determineChessboard.findChessboardSquares(
 				mergedLines,
 				squares,
 				gray_lastFrame,
@@ -188,7 +188,7 @@ class StreamProcessing {
 		inRange( lastFrame, black_bgr_min, black_bgr_max, mask );
 		cvtColor( mask, mask, COLOR_GRAY2BGR );
 		next.setTo(Scalar(0,0,255), mask);
-		//bitwise_and(mask, lastFrame, lastFrame);
+		//bitwise_and(mask, lastFrame, lastFrame);*/
 
 		//bitwise_or(black, white, lastFrame);
 		//lastFrame = next;
@@ -258,7 +258,7 @@ class StreamProcessing {
 	vector<LineMetadata> determineLines(Mat& edges, vector<vector<Point> >& squares) {
 		vector<Point> approx;
 		vector<LineMetadata> lines;
-		int sampleSize = 5;
+		int sampleSize = 1;
 
 		long long averageTime = 0;
 		auto contourTime = std::chrono::high_resolution_clock::now();
@@ -281,7 +281,7 @@ class StreamProcessing {
 					printf("PASS: Gradient: Good: %f %f Lineend: %ld\n", fabs(gradient), intercept, lineEnd);
 
 					if(lineEnd) {
-						printf("PASS: Accepting\n");
+						printf("PASS: Accepting: Grad: %f\n", gradient);
 						vector<Point> line;
 						lines.push_back({
 							.startIndex = j,
@@ -360,10 +360,11 @@ class StreamProcessing {
 		if(PRINT_LINES) {
 			for( size_t i = 0; i < lines.size(); i++) {
 
-				for(size_t j = 0; j < lines[i].line.size(); j++) {
+				/*for(size_t j = 0; j < lines[i].line.size(); j++) {
 					printf("x: %d y: %d ", lines[i].line[j].x, lines[i].line[j].y);
-				}
-				printf("\n");
+				}*/
+				//printf("\n");
+				printf("Line: Gradient: %f\n", lines[i].gradient);
 				vector<Point> line = lines[i].line;
 			//	float gradient = lines[i].gradient;
 			//	float intercept = lines[i].intercept;
@@ -607,11 +608,11 @@ class StreamProcessing {
 			//if(pixelDist(contour[start], contour[lineEnd]) < 5) return 0;
 
 			
-			if(!calcGradientIntercept(gradient, intercept, threshold, start, sampleSize + start, contour)) {
+			if(!twoPointLineCalc(gradient, intercept, contour[start], contour[sampleSize + start])) {
 				return false;
 			}
 
-			if(fabs(gradient) > 5) printf("OK Best: After calc line: %f %f\n", gradient, intercept);
+			if(fabs(gradient) < 0.1) printf("OK Best: After calc line: %f %f\n", gradient, intercept);
 
 			//Check pixel dist is not too small 
 			//if(pixelDist(contour[start], contour[sampleSize + start]) > 10) return 0;
@@ -641,12 +642,31 @@ class StreamProcessing {
 		} else return false;
 	}
 
+	bool twoPointLineCalc(float& gradient, float& intercept, Point point1, Point point2) {
+		if(pixelDist(point1, point2) < 4) return false;
 
+		float x1 = (float) point1.x; float x2 = (float) point2.x;
+		float y1 = (float) point1.y; float y2 = (float) point2.y;
+
+		gradient = (y2 - y1) / (x2 - x1);
+
+		if(isnan(gradient) || isinf(gradient)) gradient = 999;
+
+		intercept = y1 - x1 * gradient;
+
+		if(isnan(gradient) || isnan(intercept)) return false;
+		if(fabs(gradient) > 0.1 && fabs(gradient) < 99) return false;
+		return true;
+
+	}
+	
 	bool calcGradientIntercept(
 			float& gradient, float& intercept, float threshold,
 			int start, int end, vector<Point> points_1,
 			int sStart = -1, int sEnd = -1, vector<Point> points_2 = {}
 	) {
+
+		if(pixelDist(points_1[start], points_1[end]) < 1) return false;
 
 		float noPoints = 0;
 		float sumX = 0;
@@ -674,11 +694,13 @@ class StreamProcessing {
 		gradient = ((float) noPoints * (float) sumXY - (float) sumX * (float) sumY) / ((float) noPoints * (float) sumX2 - (float) pow((float) sumX, 2));
 		if(isnan(gradient)) gradient = 999;
 
+
 		intercept = ((float) sumY - gradient * sumX) / noPoints;
+		printf("No points: %f Grad: %f Intercept: %f\n", noPoints, gradient, intercept);
 
 		if(isnan(gradient) || isnan(intercept)) return false;
 
-		if(fabs(gradient) > 0.1 && fabs(gradient) < 999) return false;
+		if(fabs(gradient) > 0.1 && fabs(gradient) < 99) return false;
 
 		for ( size_t j = start; j < end; j++) {
 			float diff = calcDiff(gradient, intercept, points_1[j].x, points_1[j].y);
