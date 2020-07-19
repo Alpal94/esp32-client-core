@@ -37,6 +37,8 @@ struct LineMetadata {
 	size_t contourIndex;
 	float gradient;
 	float intercept;
+	float xIntercept;
+	int relevance;
 	std::vector<cv::Point> line;
 };
 
