@@ -38,6 +38,7 @@ struct LineMetadata {
 	float gradient;
 	float intercept;
 	float xIntercept;
+	float xGradient;
 	int relevance;
 	std::vector<cv::Point> line;
 };

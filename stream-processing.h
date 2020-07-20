@@ -271,19 +271,19 @@ class StreamProcessing {
 			if(PRINT_CONTOURS) {
 				squares.push_back(contour);
 			}
-			float gradient, intercept, xIntercept;
+			float gradient, intercept, xIntercept, xGradient;
 			bool doCalcLines = true;
 			if(doCalcLines) {
 				for ( size_t j = 0; j < contour.size(); j++) {
 					//if(!(j > 5 && j < 11)) continue;
 					//printMarker(contour[11], squares, 10);
-					size_t lineEnd = calcLineBestFit(gradient, intercept, xIntercept, sampleSize, contour, j);
+					size_t lineEnd = calcLineBestFit(gradient, intercept, xIntercept, xGradient, sampleSize, contour, j);
 					printf("PASS: Gradient: Good: %f %f Lineend: %ld\n", fabs(gradient), intercept, lineEnd);
 
 					if(lineEnd) {
 						bool family = false;
 						for ( size_t z = 0; z < lines.size(); z++) {
-							if(fabs(lines[z].gradient - gradient) < 0.1 && (fabs(lines[z].intercept - intercept) < 4 || fabs(lines[z].xIntercept - xIntercept < 4))) {
+							if(fabs(lines[z].gradient - gradient) < 0.1 && (fabs(lines[z].intercept - intercept) < 2 || fabs(lines[z].xIntercept - xIntercept < 2))) {
 								family = true;
 								lines[z].relevance++;
 								break;
@@ -298,6 +298,7 @@ class StreamProcessing {
 								.gradient = gradient,
 								.intercept = intercept,
 								.xIntercept = xIntercept,
+								.xGradient = xGradient,
 								.relevance = 1,
 								.line = line
 
@@ -376,16 +377,48 @@ class StreamProcessing {
 				}*/
 				//printf("\n");
 				printf("Line: Gradient: %f %f %d\n", lines[i].gradient, lines[i].intercept, lines[i].relevance);
-				vector<Point> line = lines[i].line;
 			//	float gradient = lines[i].gradient;
 			//	float intercept = lines[i].intercept;
 				//int gradCount = gradientFrequencies[gradientToIndex(gradient)];
 		//		int interceptCount = interceptFrequencies[interceptToIndex(intercept)];
-				squares.push_back(line);
+				squares.push_back(calcPrintLine(lines[i]));
 			}
 		}
 		return mergedLines;
 	}
+
+	vector<Point> calcPrintLine(LineMetadata line) {
+		float gradient = line.gradient;
+	       	float intercept = line.intercept;
+		float xGradient = line.xGradient;
+	       	float xIntercept = line.xIntercept;
+
+		vector<Point> linePoints;
+		linePoints.clear();
+
+		if(!isnan(xGradient) && !isnan(xIntercept) && !isinf(xGradient) && !isinf(xIntercept)) {
+			for( size_t x = 0; x < ROWS; x++ ) {
+				float y = x * xGradient + xIntercept;
+				if(y > 0 && y < COLS) {
+					Point point(y,x);
+					linePoints.push_back(point);
+				}
+			}
+		} else if(!isnan(gradient) && !isnan(intercept) && !isinf(gradient) && !isinf(intercept)) {
+			for( size_t x = 0; x < COLS; x++ ) {
+				float y = x * gradient + intercept;
+				if(y > 0 && y < ROWS) {
+					Point point(x,y);
+					linePoints.push_back(point);
+				}
+			}
+		} else {
+			printf("Warning: INVALID LINE\n");
+		}
+
+		return linePoints;
+	}
+
 	static bool sortLineSegments(pair<Point, Point> a, pair<Point, Point> b) {
 		return a.first.x < b.first.x;
 	}
@@ -608,14 +641,14 @@ class StreamProcessing {
 		}
 	}
 
-	size_t calcLineBestFit(float& gradient, float& intercept, float& xIntercept, int sampleSize, vector<Point> contour, int start) {
+	size_t calcLineBestFit(float& gradient, float& intercept, float& xIntercept, float& xGradient, int sampleSize, vector<Point> contour, int start) {
 		float threshold = 1.0;
 		if(sampleSize + start < contour.size()) {
 			size_t lineEnd = sampleSize + start;
 			//if(pixelDist(contour[start], contour[lineEnd]) < 5) return 0;
 
 			
-			if(!twoPointLineCalc(gradient, intercept, xIntercept, contour[start], contour[sampleSize + start])) {
+			if(!twoPointLineCalc(gradient, intercept, xIntercept, xGradient, contour[start], contour[sampleSize + start])) {
 				return false;
 			}
 
@@ -649,14 +682,14 @@ class StreamProcessing {
 		} else return false;
 	}
 
-	bool twoPointLineCalc(float& gradient, float& intercept, float& xIntercept, Point point1, Point point2) {
+	bool twoPointLineCalc(float& gradient, float& intercept, float& xIntercept, float& xGradient, Point point1, Point point2) {
 		if(pixelDist(point1, point2) < 4) return false;
 
 		float x1 = (float) point1.x; float x2 = (float) point2.x;
 		float y1 = (float) point1.y; float y2 = (float) point2.y;
 
 		gradient = (y2 - y1) / (x2 - x1);
-		float xGradient = (x2 - x1) / (y2 - y1);
+		xGradient = (x2 - x1) / (y2 - y1);
 
 		if(isnan(gradient) || isinf(gradient)) gradient = 999;
 
