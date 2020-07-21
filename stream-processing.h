@@ -5,9 +5,9 @@
 #include "lib/hsv-experiment.h"
 
 #define PRINT_LINES true
-#define GENERATE_LINES true
+#define GENERATE_LINES false
 #define NEW_LINE_POINTS false
-#define PRINT_CONTOURS false
+#define PRINT_CONTOURS true
 #define HSV_EXPERIMENT false
 #define CALIBRATE false
 #define READ_CALIBRATION true
@@ -258,8 +258,6 @@ class StreamProcessing {
 	vector<LineMetadata> determineLines(Mat& edges, vector<vector<Point> >& squares) {
 		vector<Point> approx;
 		vector<LineMetadata> lines;
-		int sampleSize = 1;
-
 		long long averageTime = 0;
 		auto contourTime = std::chrono::high_resolution_clock::now();
 		for ( size_t i = 0; i < contours.size(); i++) {
@@ -277,20 +275,35 @@ class StreamProcessing {
 				for ( size_t j = 0; j < contour.size(); j++) {
 					//if(!(j > 5 && j < 11)) continue;
 					//printMarker(contour[11], squares, 10);
-					size_t lineEnd = calcLineBestFit(gradient, intercept, xIntercept, xGradient, sampleSize, contour, j);
+					size_t lineEnd = calcLineBestFit(gradient, intercept, xIntercept, xGradient, contour, j);
 					printf("PASS: Gradient: Good: %f %f Lineend: %ld\n", fabs(gradient), intercept, lineEnd);
 
 					if(lineEnd) {
 						bool family = false;
+						float dist = pixelDist(contour[j], contour[j+1]);
+						SegmentMetadata segment = {
+							.start = contour[j],
+							.end = contour[j+1],
+							.dist = dist
+						};
 						for ( size_t z = 0; z < lines.size(); z++) {
-							if(fabs(lines[z].gradient - gradient) < 0.1 && (fabs(lines[z].intercept - intercept) < 2 || fabs(lines[z].xIntercept - xIntercept < 2))) {
+							if(
+								fabs(lines[z].gradient - gradient) < 0.1 &&
+								(
+								 (fabs(gradient) < 0.1 && fabs(lines[z].intercept - intercept) < 4) ||
+								 (fabs(gradient) > 99 && fabs(lines[z].xIntercept - xIntercept) < 1)
+								)
+							) {
 								family = true;
-								lines[z].relevance++;
+								lines[z].relevance += dist;
+								lines[z].segments.push_back(segment);
 								break;
 							}
 						}
 						if(!family) {
 							vector<Point> line;
+							vector<SegmentMetadata> segments;
+							segments.push_back(segment);
 							lines.push_back({
 								.startIndex = j,
 								.endIndex = lineEnd,
@@ -299,9 +312,9 @@ class StreamProcessing {
 								.intercept = intercept,
 								.xIntercept = xIntercept,
 								.xGradient = xGradient,
-								.relevance = 1,
+								.relevance = dist,
+								.segments = segments,
 								.line = line
-
 							});
 							j = lineEnd;
 						}
@@ -376,12 +389,37 @@ class StreamProcessing {
 					printf("x: %d y: %d ", lines[i].line[j].x, lines[i].line[j].y);
 				}*/
 				//printf("\n");
-				printf("Line: Gradient: %f %f %d\n", lines[i].gradient, lines[i].intercept, lines[i].relevance);
+				printf("Line: Gradient: y: %f %f x: %f %f r: %f\n", lines[i].gradient, lines[i].intercept, lines[i].xGradient, lines[i].xIntercept, lines[i].relevance);
+
+				bool vertical = !isinf(lines[i].xGradient);
+				float maxLength = 0;
+				float current = 0;
+				vector<SegmentMetadata> segments = lines[i].segments;
+				sort(segments.begin(), segments.end(), vertical ? sortSegmentsY : sortSegmentsX);
+				for( size_t j = 0; j < segments.size()-1; j++) {
+					int startX = segments[i+1].start.x;
+					int endX = segments[i].end.x;
+					if(vertical) {
+						int startX = segments[i+1].start.y;
+						int endX = segments[i].end.y;
+					}
+					if((startX - endX) < 0) {
+						if(current) {
+							current += segments[i+1].dist;
+						} else {
+							current = segments[i+1].dist + segments[i].dist;
+						}
+						maxLength = max(current, maxLength);
+					} else {
+						current = 0;
+					}
+				}
 			//	float gradient = lines[i].gradient;
 			//	float intercept = lines[i].intercept;
 				//int gradCount = gradientFrequencies[gradientToIndex(gradient)];
 		//		int interceptCount = interceptFrequencies[interceptToIndex(intercept)];
-				squares.push_back(calcPrintLine(lines[i]));
+				if(lines[i].relevance > 20) squares.push_back(calcPrintLine(lines[i]));
+				
 			}
 		}
 		return mergedLines;
@@ -418,7 +456,12 @@ class StreamProcessing {
 
 		return linePoints;
 	}
-
+	static bool sortSegmentsX(SegmentMetadata a, SegmentMetadata b) {
+		return a.start.x < b.start.x;
+	}
+	static bool sortSegmentsY(SegmentMetadata a, SegmentMetadata b) {
+		return a.start.y < b.start.y;
+	}
 	static bool sortLineSegments(pair<Point, Point> a, pair<Point, Point> b) {
 		return a.first.x < b.first.x;
 	}
@@ -641,43 +684,14 @@ class StreamProcessing {
 		}
 	}
 
-	size_t calcLineBestFit(float& gradient, float& intercept, float& xIntercept, float& xGradient, int sampleSize, vector<Point> contour, int start) {
+	size_t calcLineBestFit(float& gradient, float& intercept, float& xIntercept, float& xGradient, vector<Point> contour, int start) {
 		float threshold = 1.0;
-		if(sampleSize + start < contour.size()) {
-			size_t lineEnd = sampleSize + start;
-			//if(pixelDist(contour[start], contour[lineEnd]) < 5) return 0;
-
-			
-			if(!twoPointLineCalc(gradient, intercept, xIntercept, xGradient, contour[start], contour[sampleSize + start])) {
+		if(start + 1 < contour.size()) {
+			size_t lineEnd = start + 1;
+			if(!twoPointLineCalc(gradient, intercept, xIntercept, xGradient, contour[start], contour[start + 1])) {
 				return false;
 			}
-
 			if(fabs(gradient) < 0.1) printf("OK Best: After calc line: %f %f\n", gradient, intercept);
-
-			//Check pixel dist is not too small 
-			//if(pixelDist(contour[start], contour[sampleSize + start]) > 10) return 0;
-
-			//Find full extention of line
-			//float diff = 0;
-
-			//printf("Line end: %ld contour size: %ld\n", lineEnd, contour.size());
-			/*while( lineEnd < contour.size()) {
-				//if(pixelDist(contour[start], contour[sampleSize + start]) < 4) return 0;
-				diff = calcDiff(gradient, intercept, contour[lineEnd].x, contour[lineEnd].y);
-				if(!calcGradientIntercept(gradient, intercept, threshold, start, sampleSize + start, contour)) {
-
-					lineEnd++;
-				} else break;
-			}*/
-
-			/*if(!calcGradientIntercept(
-						gradient, intercept, threshold,
-						start, lineEnd, contour
-					)) {
-				return false;
-			}*/
-			
-			//printf("Line end: %ld Gradient: %f\n", lineEnd, gradient);
 			return lineEnd;
 		} else return false;
 	}

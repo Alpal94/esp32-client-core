@@ -31,6 +31,12 @@
 using namespace cv;
 using namespace std;
 
+struct SegmentMetadata {
+	Point start;
+	Point end;
+	float dist;
+};
+
 struct LineMetadata {
 	size_t startIndex;
 	size_t endIndex;
@@ -39,7 +45,8 @@ struct LineMetadata {
 	float intercept;
 	float xIntercept;
 	float xGradient;
-	int relevance;
+	float relevance;
+	std::vector<SegmentMetadata> segments;
 	std::vector<cv::Point> line;
 };
 
