@@ -4,10 +4,10 @@
 #include "lib/calibrate-camera.h"
 #include "lib/hsv-experiment.h"
 
-#define PRINT_LINES true
+#define PRINT_LINES false
 #define GENERATE_LINES false
 #define NEW_LINE_POINTS false
-#define PRINT_CONTOURS true
+#define PRINT_CONTOURS false
 #define HSV_EXPERIMENT false
 #define CALIBRATE false
 #define READ_CALIBRATION true
@@ -113,7 +113,7 @@ class StreamProcessing {
 		auto startDetermineLines = std::chrono::high_resolution_clock::now();
 		vector<LineMetadata> mergedLines = determineLines(detected_edges, squares);
 		timer(startDetermineLines, (char*) "DetermineLines");
-		/*determineChessboard.findChessboardSquares(
+		determineChessboard.findChessboardSquares(
 				mergedLines,
 				squares,
 				gray_lastFrame,
@@ -188,7 +188,7 @@ class StreamProcessing {
 		inRange( lastFrame, black_bgr_min, black_bgr_max, mask );
 		cvtColor( mask, mask, COLOR_GRAY2BGR );
 		next.setTo(Scalar(0,0,255), mask);
-		//bitwise_and(mask, lastFrame, lastFrame);*/
+		//bitwise_and(mask, lastFrame, lastFrame);
 
 		//bitwise_or(black, white, lastFrame);
 		//lastFrame = next;
@@ -272,7 +272,7 @@ class StreamProcessing {
 			float gradient, intercept, xIntercept, xGradient;
 			bool doCalcLines = true;
 			if(doCalcLines) {
-				for ( size_t j = 0; j < contour.size(); j++) {
+				for ( size_t j = 0; j < contour.size()-1; j++) {
 					//if(!(j > 5 && j < 11)) continue;
 					//printMarker(contour[11], squares, 10);
 					size_t lineEnd = calcLineBestFit(gradient, intercept, xIntercept, xGradient, contour, j);
@@ -286,6 +286,7 @@ class StreamProcessing {
 							.end = contour[j+1],
 							.dist = dist
 						};
+
 						for ( size_t z = 0; z < lines.size(); z++) {
 							if(
 								fabs(lines[z].gradient - gradient) < 0.1 &&
@@ -296,7 +297,12 @@ class StreamProcessing {
 							) {
 								family = true;
 								lines[z].relevance += dist;
+								for(int v = 0; v < lines[z].segments.size(); v++) {
+									printf("Insert segment: %d %d %d %d\n", lines[z].segments[v].start.x, lines[z].segments[v].end.x, lines[z].segments[v].start.y, lines[z].segments[v].end.y);
+								}
+								printf("Insert: end\n");
 								lines[z].segments.push_back(segment);
+
 								break;
 							}
 						}
@@ -344,44 +350,10 @@ class StreamProcessing {
 		averageTime = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
 		printf("\nAverage time: %lld contours: %ld (CONTOUR)\n", averageTime, contours.size());
 
+		lines = filterLines(lines);
 		contourTime = std::chrono::high_resolution_clock::now();
 
-		vector<LineMetadata> mergedLines;
-		if(false) {
-			mergedLines = recalculateMergedLines(lines, 2.0, 0.06, 10);
-			elapsed = std::chrono::high_resolution_clock::now() - contourTime;
-			averageTime = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-			printf("Recalculate time: %lld (CONTOUR)\n", averageTime);	
-
-			vector<pair<float, float> > filteredGradients;
-			for (size_t i = 0; i < mergedLines.size(); i++) {
-				filteredGradients.push_back(make_pair(mergedLines[i].gradient, mergedLines[i].intercept));	
-			}
-
-			if(NEW_LINE_POINTS) {
-				//printf("NEW LINES: %ld\n", mergedLines.size());
-				for(size_t i = 0; i < mergedLines.size(); i++) {
-					if(mergedLines[i].line.size() > lower && mergedLines[i].line.size() < upper) 
-						squares.push_back(mergedLines[i].line);
-				}
-			}
-
-			if(GENERATE_LINES) {
-				for (size_t i = 0; i < mergedLines.size(); i++) {
-					vector<Point> line;
-					float gradient = mergedLines[i].gradient;
-					float intercept = mergedLines[i].intercept;
-
-					size_t s = mergedLines[i].startIndex;
-					size_t e = mergedLines[i].endIndex;
-					size_t start = s < e ? s : e;
-					size_t end = s < e ? e : s;
-					printf("MERGED LINE: s: %ld  e: %ld\n", mergedLines[i].startIndex, mergedLines[i].endIndex);
-					pureCalcLine(gradient, intercept, line);
-					squares.push_back(line);
-				}
-			}
-		}
+		vector<LineMetadata> mergedLines = lines;
 		if(PRINT_LINES) {
 			for( size_t i = 0; i < lines.size(); i++) {
 
@@ -391,38 +363,50 @@ class StreamProcessing {
 				//printf("\n");
 				printf("Line: Gradient: y: %f %f x: %f %f r: %f\n", lines[i].gradient, lines[i].intercept, lines[i].xGradient, lines[i].xIntercept, lines[i].relevance);
 
-				bool vertical = !isinf(lines[i].xGradient);
-				float maxLength = 0;
-				float current = 0;
-				vector<SegmentMetadata> segments = lines[i].segments;
-				sort(segments.begin(), segments.end(), vertical ? sortSegmentsY : sortSegmentsX);
+
+			//	float gradient = lines[i].gradient;
+			//	float intercept = lines[i].intercept;
+				//int gradCount = gradientFrequencies[gradientToIndex(gradient)];
+		//		int interceptCount = interceptFrequencies[interceptToIndex(intercept)];
+				squares.push_back(calcPrintLine(lines[i]));
+				
+			}
+		}
+		return mergedLines;
+	}
+
+	vector<LineMetadata> filterLines(vector<LineMetadata>& lines) {
+		vector<LineMetadata> newLines;
+		for( size_t i = 0; i < lines.size(); i++) {
+			bool vertical = lines[i].gradient == 999;
+			float maxLength = 0;
+			float current = 0;
+			vector<SegmentMetadata> segments = lines[i].segments;
+			sort(segments.begin(), segments.end(), vertical ? sortSegmentsY : sortSegmentsX);
+			if(lines[i].relevance > 20) {
 				for( size_t j = 0; j < segments.size()-1; j++) {
-					int startX = segments[i+1].start.x;
-					int endX = segments[i].end.x;
+					int startX = segments[j+1].start.x;
+					int endX = segments[j].end.x;
 					if(vertical) {
-						int startX = segments[i+1].start.y;
-						int endX = segments[i].end.y;
+						startX = segments[j+1].start.y;
+						endX = segments[j].end.y;
 					}
-					if((startX - endX) < 0) {
+					if((endX - startX) < 4) {
 						if(current) {
-							current += segments[i+1].dist;
+							current += segments[j+1].dist;
 						} else {
-							current = segments[i+1].dist + segments[i].dist;
+							current = segments[j+1].dist + segments[j].dist;
 						}
 						maxLength = max(current, maxLength);
 					} else {
 						current = 0;
 					}
 				}
-			//	float gradient = lines[i].gradient;
-			//	float intercept = lines[i].intercept;
-				//int gradCount = gradientFrequencies[gradientToIndex(gradient)];
-		//		int interceptCount = interceptFrequencies[interceptToIndex(intercept)];
-				if(lines[i].relevance > 20) squares.push_back(calcPrintLine(lines[i]));
-				
+				printf("Lines: max: %f relevance: %f\n", maxLength, lines[i].relevance);
 			}
+			if(maxLength > 40) newLines.push_back(lines[i]);
 		}
-		return mergedLines;
+		return newLines;
 	}
 
 	vector<Point> calcPrintLine(LineMetadata line) {
