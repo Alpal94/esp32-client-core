@@ -5,6 +5,7 @@
 #include "lib/hsv-experiment.h"
 
 #define PRINT_LINES true
+#define PRINT_HOUGH_LINES true
 #define NEW_LINE_POINTS false
 #define PRINT_CONTOURS false
 #define HSV_EXPERIMENT false
@@ -273,6 +274,12 @@ class StreamProcessing {
 		HoughLinesP(edges, houghLines, 1, CV_PI/180, 50, 30, 10);
 		printf("Hough begin: %ld\n\n", houghLines.size());
 		for( size_t i = 0; i < houghLines.size(); i++ ) {
+			if(PRINT_HOUGH_LINES) {
+				line( lastFrame,
+					Point(houghLines[i][0], houghLines[i][1]),
+					Point(houghLines[i][2], houghLines[i][3]),
+					Scalar(0,0,255), 1, 1);
+			}
 			float gradient, intercept, xIntercept, xGradient;
 			twoPointLineCalc(gradient, intercept, xIntercept, xGradient, 
 				Point(houghLines[i][0], houghLines[i][1]),
@@ -293,7 +300,6 @@ class StreamProcessing {
 		averageTime = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
 		printf("\nAverage time: %lld contours: %ld (CONTOUR)\n", averageTime, contours.size());
 
-		//lines = filterLines(lines);
 		contourTime = std::chrono::high_resolution_clock::now();
 
 		if(PRINT_LINES) {
@@ -303,40 +309,6 @@ class StreamProcessing {
 			}
 		}
 		return lines;
-	}
-
-	vector<LineMetadata> filterLines(vector<LineMetadata>& lines) {
-		vector<LineMetadata> newLines;
-		for( size_t i = 0; i < lines.size(); i++) {
-			bool vertical = lines[i].gradient == GRADIENT_VERTICAL;
-			float maxLength = 0;
-			float current = 0;
-			vector<SegmentMetadata> segments = lines[i].segments;
-			sort(segments.begin(), segments.end(), vertical ? sortSegmentsY : sortSegmentsX);
-			if(lines[i].relevance > 0) {
-				for( size_t j = 0; j < segments.size()-1; j++) {
-					int startX = segments[j+1].start.x;
-					int endX = segments[j].end.x;
-					if(vertical) {
-						startX = segments[j+1].start.y;
-						endX = segments[j].end.y;
-					}
-					if((endX - startX) < 4) {
-						if(current) {
-							current += segments[j+1].dist;
-						} else {
-							current = segments[j+1].dist + segments[j].dist;
-						}
-						maxLength = max(current, maxLength);
-					} else {
-						current = 0;
-					}
-				}
-				printf("Lines: max: %f relevance: %f\n", maxLength, lines[i].relevance);
-			}
-			if(maxLength > 10) newLines.push_back(lines[i]);
-		}
-		return newLines;
 	}
 
 	vector<Point> calcPrintLine(LineMetadata line) {
