@@ -4,7 +4,6 @@ using namespace std;
 
 class DetermineChessBoard {
 	private:	
-	Mat display;
 	vector<Point> squareIntercepts;
 	RobotPosition currRobotPosition;
 	RobotPosition originalRobotPosition;
@@ -20,7 +19,6 @@ class DetermineChessBoard {
 
 	public:
 	void findChessboardSquares(vector<LineMetadata> &mergedLines, vector<vector<Point> >& squares, Mat _gray_lastFrame, Mat &_lastFrame, Mat &_display, RobotPosition _robotPosition) {
-		display = _display;
 
 		vector<vector<Point> > drawing;
 		currRobotPosition = _robotPosition;
@@ -53,16 +51,16 @@ class DetermineChessBoard {
 				
 				float angle = angleFromGradient(gradient, gradient_next);
 				//if(mergedLines[i].gradient < -1) printf("next: intercept: %f\n", mergedLines[i].intercept);
-				if(angle < 0.06) {
+				if(angle < 0.03) {
 					parallel_lines.push_back(mergedLines[j]);
 				}
-				if(angle > 1.10 && angle < 2.0) {
+				if(angle > 1.50 && angle < 1.8) {
 					perpendicular_lines.push_back(mergedLines[j]);
 				}
 			}
 			if(parallel_lines.size() > 1 && perpendicular_lines.size() > 1) {
-				float minSpacing = 5;
-				float maxSpacing = minSpacing + 10;
+				float minSpacing = 10;
+				float maxSpacing = minSpacing + 3;
 				int parallel = 0;
 				vector<LineMetadata> squareCandidateParallel;
 				vector<LineMetadata> squareCandidatePerpendicular;
@@ -168,13 +166,14 @@ class DetermineChessBoard {
 								.southEast = southEast,
 								.southWest = southWest
 							};
+
 							/*pureCalcLine(mergedLines[i].gradient, mergedLines[i].intercept, squareIntercepts);
 							pureCalcLine(squareCandidatePerpendicular[z].gradient, squareCandidatePerpendicular[z].intercept, squareIntercepts);
 							pureCalcLine(squareCandidatePerpendicular[z+1].gradient, squareCandidatePerpendicular[z+1].intercept, squareIntercepts);
 							pureCalcLine(squareCandidateParallel[j].gradient, squareCandidateParallel[j].intercept, squareIntercepts);*/
 							if(noSquares) {
 								printSquare(rotateSquare(square, { .rotation = 0 }), _lastFrame);
-								squareColour(square, _lastFrame);
+								squareColour(square, _lastFrame, _display);
 								insertSquare(&localSquareMap, square, { .spacing = 0, .rotation = xAxisAngle, .north = 0, .west = 0 }, Point(0,0));
 
 								//printf("East-West GRADIENTS: %f %f\n", squareCandidateParallel[j].gradient, mergedLines[i].gradient);
@@ -238,7 +237,6 @@ class DetermineChessBoard {
 		asciiPrintBoard(&localSquareMap);
 		drawing.push_back(squareIntercepts);
 		squares = drawing;
-		_display = display;
 	}
 
 	vector<Square> getLocalSquareList() {
@@ -447,7 +445,7 @@ class DetermineChessBoard {
 
 	bool firstSquareColourDetermined = false;
 	Vec3b tmpSquareColour;
-	void squareColour(Square _square, Mat &lastFrame) {
+	void squareColour(Square _square, Mat &lastFrame, Mat &_display) {
 		//printMarker(Point((int)_square.center.x, (int)_square.center.y), 10);
 
 		int minHue = 255; int maxHue = 0; int averageHue = 0;
@@ -490,8 +488,8 @@ class DetermineChessBoard {
 		printf("HSV: %d %d Average: %d %d %d Min: %d %d %d Max %d %d %d\n", (int) _square.center.x, (int) _square.center.y, averageHue, averageSaturation, averageValue, minHue, minSaturation, minValue, maxHue, maxSaturation, maxValue);
 
 
-		cvtColor(lastFrame, display, COLOR_BGR2HSV);
-		inRange( display, Scalar(minHue,minSaturation,minValue), Scalar(maxHue,maxSaturation,maxValue), display );
+		cvtColor(lastFrame, _display, COLOR_BGR2HSV);
+		inRange( _display, Scalar(minHue,minSaturation,minValue), Scalar(maxHue,maxSaturation,maxValue), _display );
 
 
 
