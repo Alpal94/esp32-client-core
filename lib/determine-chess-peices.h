@@ -200,9 +200,6 @@ class DetermineChessPieces {
 	MinMaxHSV squareColour[2];
 	char chessBoard[OVERSIZED_BOARD][OVERSIZED_BOARD] = {};
 
-	Mat gray_lastFrame;
-	Mat lastFrame;
-
 	ContourMap contourMap[COLS][ROWS];
 	vector<vector<Point> > contours;
 	vector<vector<Point> > drawing;
@@ -221,8 +218,7 @@ class DetermineChessPieces {
 
 		drawing.clear();
 		drawing = _drawing;
-		gray_lastFrame = _gray_lastFrame;
-		lastFrame = _lastFrame;
+
 		hierarchy = _hierarchy;
 
 		//contourMap[COLS][ROWS] = {};
@@ -249,7 +245,7 @@ class DetermineChessPieces {
 			}
 		}
 		int count = 0;
-		ColourAnalysis squareColourAnalysis(lastFrame);
+		ColourAnalysis squareColourAnalysis(_lastFrame);
 
 		bool firstBlack = false, firstWhite = false;
 		for (int i = 0; i < _localSquareList.size(); i++) {
@@ -288,7 +284,8 @@ class DetermineChessPieces {
 								evaluated = evaluateChessPiece(
 									contourMap[x][y].contour,
 									contourMap[x][y].contourSubIndex,
-									manualCenter
+									manualCenter,
+									_lastFrame
 								);
 								if(evaluated) {
 									int x = square.global_x;
@@ -325,8 +322,8 @@ class DetermineChessPieces {
 			}
 		}
 
-		squareColour[0] = squareColourAnalysis.getSquare(0);
-		squareColour[1] = squareColourAnalysis.getSquare(1);
+		//squareColour[0] = squareColourAnalysis.getSquare(0);
+		//squareColour[1] = squareColourAnalysis.getSquare(1);
 
 		cout << "HSVF Square 0 colour: min: " << squareColour[0].min << " max: " << squareColour[0].max << " Square 1 colour: min: " << squareColour[1].min << " max: " << squareColour[1].max << endl;
 		_drawing = drawing;
@@ -361,7 +358,7 @@ class DetermineChessPieces {
 		}
 		drawing.push_back(marker);
 	}
-	bool evaluateChessPiece(size_t contourIndex, size_t contourSubIndex, FPoint center) {
+	bool evaluateChessPiece(size_t contourIndex, size_t contourSubIndex, FPoint center, Mat &lastFrame) {
 		int count = 0;
 		FPoint original = pointToFPoint(contours[contourIndex][contourSubIndex]);
 		float angleAscending = 0;

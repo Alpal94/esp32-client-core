@@ -4,8 +4,6 @@ using namespace std;
 
 class DetermineChessBoard {
 	private:	
-	Mat gray_lastFrame;
-	Mat lastFrame;
 	Mat display;
 	vector<Point> squareIntercepts;
 	RobotPosition currRobotPosition;
@@ -15,7 +13,6 @@ class DetermineChessBoard {
 	Square squareMap[OVERSIZED_BOARD][OVERSIZED_BOARD] = {};
 	Square localSquareMap[OVERSIZED_BOARD][OVERSIZED_BOARD] = {};
 
-	vector<vector<Point> > drawing;
 
 	bool squareColourDetermined = false;
 	Vec3b blackSquareColour;
@@ -23,11 +20,9 @@ class DetermineChessBoard {
 
 	public:
 	void findChessboardSquares(vector<LineMetadata> &mergedLines, vector<vector<Point> >& squares, Mat _gray_lastFrame, Mat &_lastFrame, Mat &_display, RobotPosition _robotPosition) {
-		drawing = squares;
-		gray_lastFrame = _gray_lastFrame;
-		lastFrame = _lastFrame;
 		display = _display;
 
+		vector<vector<Point> > drawing;
 		currRobotPosition = _robotPosition;
 
 		squareIntercepts.clear();
@@ -178,8 +173,8 @@ class DetermineChessBoard {
 							pureCalcLine(squareCandidatePerpendicular[z+1].gradient, squareCandidatePerpendicular[z+1].intercept, squareIntercepts);
 							pureCalcLine(squareCandidateParallel[j].gradient, squareCandidateParallel[j].intercept, squareIntercepts);*/
 							if(noSquares) {
-								printSquare(rotateSquare(square, { .rotation = 0 }));
-								squareColour(square);
+								printSquare(rotateSquare(square, { .rotation = 0 }), _lastFrame);
+								squareColour(square, _lastFrame);
 								insertSquare(&localSquareMap, square, { .spacing = 0, .rotation = xAxisAngle, .north = 0, .west = 0 }, Point(0,0));
 
 								//printf("East-West GRADIENTS: %f %f\n", squareCandidateParallel[j].gradient, mergedLines[i].gradient);
@@ -430,6 +425,7 @@ class DetermineChessBoard {
 
 	void pureCalcLine(
 		float gradient, float intercept, vector<Point>& line,
+		Mat &gray_lastFrame,
 		float _start = 0, float _end = COLS
 	) {
 		float start = _start < _end ? _start : _end;
@@ -451,7 +447,7 @@ class DetermineChessBoard {
 
 	bool firstSquareColourDetermined = false;
 	Vec3b tmpSquareColour;
-	void squareColour(Square _square) {
+	void squareColour(Square _square, Mat &lastFrame) {
 		//printMarker(Point((int)_square.center.x, (int)_square.center.y), 10);
 
 		int minHue = 255; int maxHue = 0; int averageHue = 0;
@@ -507,7 +503,7 @@ class DetermineChessBoard {
 		}
 	}
 
-	void printMarker(Point point, int size) {
+	void printMarker(Point point, int size, Mat &drawing) {
 		vector<Point> marker;
 		marker.clear();
 
@@ -522,34 +518,26 @@ class DetermineChessBoard {
 		drawing.push_back(marker);
 	}
 
-	void printSquare(Square _square) {
-		float northGradient = ((float) _square.northEast.y - (float) _square.northWest.y) / ((float) _square.northEast.x - (float) _square.northWest.x);
-		float northIntercept = (float) _square.northEast.y - northGradient * ((float) _square.northEast.x);
-		pureCalcLine(
-				northGradient, northIntercept, squareIntercepts, 
-				_square.northEast.x, _square.northWest.x
-		);
+	void printSquare(Square _square, Mat &gray_lastFrame) {
+		line( gray_lastFrame,
+				Point(_square.northEast.x, _square.northEast.y),
+				Point(_square.northWest.x, _square.northWest.y),
+				Scalar(0,255,0), 1, 1);
 
-		float southGradient = ((float) _square.southEast.y - (float) _square.southWest.y) / ((float) _square.southEast.x - (float) _square.southWest.x);
-		float southIntercept = (float) _square.southEast.y - southGradient * ((float) _square.southEast.x);
-		pureCalcLine(
-			southGradient, southIntercept, squareIntercepts,
-			_square.southEast.x, _square.southWest.x
-		);
+		line( gray_lastFrame,
+				Point(_square.southEast.x, _square.southEast.y),
+				Point(_square.southWest.x, _square.southWest.y),
+				Scalar(0,255,0), 1, 1);
 
-		float westGradient = ((float) _square.southWest.y - (float) _square.northWest.y) / ((float) _square.southWest.x - (float) _square.northWest.x);
-		float westIntercept = (float) _square.southWest.y - westGradient * ((float) _square.southWest.x);
-		pureCalcLine(
-			westGradient, westIntercept, squareIntercepts,
-			_square.southWest.x, _square.northWest.x
-		);
+		line( gray_lastFrame,
+				Point(_square.southWest.x, _square.southWest.y),
+				Point(_square.northWest.x, _square.northWest.y),
+				Scalar(0,255,0), 1, 1);
 
-		float eastGradient = ((float) _square.southEast.y - (float) _square.northEast.y) / ((float) _square.southEast.x - (float) _square.northEast.x);
-		float eastIntercept = (float) _square.southEast.y - eastGradient * ((float) _square.southEast.x);
-		pureCalcLine(
-			eastGradient, eastIntercept, squareIntercepts,
-			_square.southEast.x, _square.northEast.x	
-		);
+		line( gray_lastFrame,
+				Point(_square.southEast.x, _square.southEast.y),
+				Point(_square.northEast.x, _square.northEast.y),
+				Scalar(0,255,0), 1, 1);
 	}
 
 	float gradientFromPoints(FPoint _point1, FPoint _point2) {

@@ -4,7 +4,7 @@
 #include "lib/calibrate-camera.h"
 #include "lib/hsv-experiment.h"
 
-#define PRINT_LINES true
+#define PRINT_LINES false
 #define PRINT_HOUGH_LINES true
 #define NEW_LINE_POINTS false
 #define PRINT_CONTOURS false
@@ -114,84 +114,86 @@ class StreamProcessing {
 		//cvtColor( lastFrame, lastFrame, COLOR_BGR2HSV );
 		auto startDetermineLines = std::chrono::high_resolution_clock::now();
 		vector<LineMetadata> mergedLines = determineLines(detected_edges, squares);
-		timer(startDetermineLines, (char*) "DetermineLines");
-		/*determineChessboard.findChessboardSquares(
-				mergedLines,
-				squares,
+		if(true) {
+			timer(startDetermineLines, (char*) "DetermineLines");
+			determineChessboard.findChessboardSquares(
+					mergedLines,
+					squares,
+					gray_lastFrame,
+					lastFrame,
+					display,
+					robotPosition
+			);
+			vector<Square> localSquareList = determineChessboard.getLocalSquareList();
+			vector<Square> globalSquareList = determineChessboard.getGlobalSquareList();
+			determineChessPieces.findChessPieces(
 				gray_lastFrame,
 				lastFrame,
-				display,
-				robotPosition
-		);
-		vector<Square> localSquareList = determineChessboard.getLocalSquareList();
-		vector<Square> globalSquareList = determineChessboard.getGlobalSquareList();
-		determineChessPieces.findChessPieces(
-			gray_lastFrame,
-			lastFrame,
-			contours,
-			hierarchy,
-			squares,
-			localSquareList,
-			globalSquareList
-		);
+				contours,
+				hierarchy,
+				squares,
+				localSquareList,
+				globalSquareList
+			);
 
-		MinMaxHSV blackSquare = determineChessPieces.getSquareColour(0);
-		MinMaxHSV whiteSquare = determineChessPieces.getSquareColour(1);
+			/*MinMaxHSV blackSquare = determineChessPieces.getSquareColour(0);
+			MinMaxHSV whiteSquare = determineChessPieces.getSquareColour(1);
 
-		cout << "Black square: " << blackSquare.min << " " << blackSquare.max << " White square: " << whiteSquare.min << " " << whiteSquare.max << endl;
+			cout << "Black square: " << blackSquare.min << " " << blackSquare.max << " White square: " << whiteSquare.min << " " << whiteSquare.max << endl;
 
-		printf("Unordered map size: %ld\n", blackSquare.hist.size());
+			printf("Unordered map size: %ld\n", blackSquare.hist.size());
 
-		for ( auto it = blackSquare.hist.begin(); it != blackSquare.hist.end(); ++it ) {
-			if(it->second > 1) {
-				string key = it->first;
-				uchar b = (uchar) key[0];
-				uchar g = (uchar) key[1];
-				uchar r = (uchar) key[2];
-				printf("Key: %d %d %d count: %d\n", b,g,r, it->second);
+			for ( auto it = blackSquare.hist.begin(); it != blackSquare.hist.end(); ++it ) {
+				if(it->second > 1) {
+					string key = it->first;
+					uchar b = (uchar) key[0];
+					uchar g = (uchar) key[1];
+					uchar r = (uchar) key[2];
+					printf("Key: %d %d %d count: %d\n", b,g,r, it->second);
+				}
 			}
+
+			robotPosition = traverseChessboard(robotPosition);
+
+			//cvtColor( lastFrame, lastFrame, COLOR_BGR2HSV );
+			Mat mask;
+			Mat white;
+			Mat black;
+			Mat next;
+
+			Mat3b bgr;
+			Mat3b hsv(whiteSquare.min);
+			cvtColor(hsv, bgr, COLOR_HSV2BGR); 
+			Vec3b white_bgr_min = whiteSquare.min; //bgr.at<Vec3b>(0,0);
+
+			Mat3b hsv2(whiteSquare.max);
+			cvtColor(hsv2, bgr, COLOR_HSV2BGR); 
+			Vec3b white_bgr_max = whiteSquare.max; //bgr.at<Vec3b>(0,0);
+
+			Mat3b hsv3(blackSquare.min);
+			cvtColor(hsv3, bgr, COLOR_HSV2BGR); 
+			Vec3b black_bgr_min = blackSquare.min;//bgr.at<Vec3b>(0,0);
+
+			Mat3b hsv4(blackSquare.max);
+			cvtColor(hsv4, bgr, COLOR_HSV2BGR); 
+			Vec3b black_bgr_max = blackSquare.max;//bgr.at<Vec3b>(0,0);
+
+			lastFrame.copyTo(next);
+			inRange( lastFrame, Scalar(0,0,0), Scalar(255,255,255), mask );
+			cvtColor( mask, mask, COLOR_GRAY2BGR );
+			next.setTo(Scalar(0,0,0), mask);
+
+			inRange( lastFrame, Scalar(white_bgr_min[0], white_bgr_min[1], white_bgr_min[2]), Scalar(white_bgr_max[0], white_bgr_max[1], white_bgr_max[2]), mask );
+			cvtColor( mask, mask, COLOR_GRAY2BGR );
+			next.setTo(Scalar(0,255,0), mask);
+			//bitwise_or(mask, white, white);
+
+			inRange( lastFrame, black_bgr_min, black_bgr_max, mask );
+			cvtColor( mask, mask, COLOR_GRAY2BGR );
+			next.setTo(Scalar(0,0,255), mask);
+			//bitwise_and(mask, lastFrame, lastFrame);*/
+
 		}
-
-		robotPosition = traverseChessboard(robotPosition);
-
-		//cvtColor( lastFrame, lastFrame, COLOR_BGR2HSV );
-		Mat mask;
-		Mat white;
-		Mat black;
-		Mat next;
-
-		Mat3b bgr;
-		Mat3b hsv(whiteSquare.min);
-		cvtColor(hsv, bgr, COLOR_HSV2BGR); 
-		Vec3b white_bgr_min = whiteSquare.min; //bgr.at<Vec3b>(0,0);
-
-		Mat3b hsv2(whiteSquare.max);
-		cvtColor(hsv2, bgr, COLOR_HSV2BGR); 
-		Vec3b white_bgr_max = whiteSquare.max; //bgr.at<Vec3b>(0,0);
-
-		Mat3b hsv3(blackSquare.min);
-		cvtColor(hsv3, bgr, COLOR_HSV2BGR); 
-		Vec3b black_bgr_min = blackSquare.min;//bgr.at<Vec3b>(0,0);
-
-		Mat3b hsv4(blackSquare.max);
-		cvtColor(hsv4, bgr, COLOR_HSV2BGR); 
-		Vec3b black_bgr_max = blackSquare.max;//bgr.at<Vec3b>(0,0);
-
-		lastFrame.copyTo(next);
-		inRange( lastFrame, Scalar(0,0,0), Scalar(255,255,255), mask );
-		cvtColor( mask, mask, COLOR_GRAY2BGR );
-		next.setTo(Scalar(0,0,0), mask);
-
-		inRange( lastFrame, Scalar(white_bgr_min[0], white_bgr_min[1], white_bgr_min[2]), Scalar(white_bgr_max[0], white_bgr_max[1], white_bgr_max[2]), mask );
-		cvtColor( mask, mask, COLOR_GRAY2BGR );
-		next.setTo(Scalar(0,255,0), mask);
-		//bitwise_or(mask, white, white);
-
-		inRange( lastFrame, black_bgr_min, black_bgr_max, mask );
-		cvtColor( mask, mask, COLOR_GRAY2BGR );
-		next.setTo(Scalar(0,0,255), mask);
-		//bitwise_and(mask, lastFrame, lastFrame);*/
-
 		//bitwise_or(black, white, lastFrame);
 		//lastFrame = next;
 		if(!HSV_EXPERIMENT) drawSquares(lastFrame, squares, gray_lastFrame.rows, gray_lastFrame.cols);
@@ -271,7 +273,7 @@ class StreamProcessing {
 	vector<LineMetadata> determineLines(Mat& edges, vector<vector<Point> >& squares) {
 		vector<Vec4i> houghLines;
 		vector<LineMetadata> lines;
-		HoughLinesP(edges, houghLines, 1, CV_PI/180, 50, 30, 10);
+		HoughLinesP(edges, houghLines, 1, CV_PI/180, 30, 30, 15);
 		printf("Hough begin: %ld\n\n", houghLines.size());
 		for( size_t i = 0; i < houghLines.size(); i++ ) {
 			if(PRINT_HOUGH_LINES) {
@@ -281,17 +283,19 @@ class StreamProcessing {
 					Scalar(0,0,255), 1, 1);
 			}
 			float gradient, intercept, xIntercept, xGradient;
-			twoPointLineCalc(gradient, intercept, xIntercept, xGradient, 
+			if(twoPointLineCalc(gradient, intercept, xIntercept, xGradient, 
 				Point(houghLines[i][0], houghLines[i][1]),
 				Point(houghLines[i][2], houghLines[i][3])
-			);
-			LineMetadata data = {
-				.gradient = gradient,
-				.intercept = intercept,
-				.xIntercept = xIntercept,
-				.xGradient = xGradient
-			};
-			lines.push_back(data);
+			)) {
+				LineMetadata data = {
+					.gradient = gradient,
+					.intercept = intercept,
+					.xIntercept = xIntercept,
+					.xGradient = xGradient,
+					.bounds = houghLines[i]
+				};
+				lines.push_back(data);
+			}
 		}
 		long long averageTime = 0;
 		auto contourTime = std::chrono::high_resolution_clock::now();
