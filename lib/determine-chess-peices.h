@@ -26,8 +26,6 @@ class ColourAnalysis {
 
 		drawing = _drawing;
 		floodFill(point, contour, pieceColour, 0, true);
-		//printf("\nHSVF Piece Min: %d %d %d\n", pieceColour.min[0], pieceColour.min[1], pieceColour.min[2]);
-		//printf("HSVF Piece Max: %d %d %d\n", pieceColour.max[0], pieceColour.max[1], pieceColour.max[2]);
 		_drawing = drawing;
 		return true;
 	}
@@ -278,9 +276,7 @@ class DetermineChessPieces {
 						if(contours[contourMap[x][y].contour].size() > 2) {
 							containsContours = true;
 							count++;
-							printf("Evaluating COUNT: %d\n", count);
 							if(count > 1) {
-								printf("Evaluating piece\n");
 								evaluated = evaluateChessPiece(
 									contourMap[x][y].contour,
 									contourMap[x][y].contourSubIndex,
@@ -308,16 +304,13 @@ class DetermineChessPieces {
 				
 				bool init = false;
 				if((square.x + square.y) % 2 && !firstBlack) {
-					printf("Analysis: init black\n");
 					firstBlack = true;
 					init = true;
 				}
 				if((square.x + square.y) % 2 == 0 && !firstWhite) {
-					printf("Analysis: init white\n");
 					firstWhite = true;
 					init = true;
 				}
-				printf("Analysis: %d for %d %d and index: %d\n", (square.x + square.y) % 2, square.x, square.y, i);
 				MinMaxHSV result = squareColourAnalysis.squareColourAnalysis(square, (square.x + square.y) % 2, init, drawing);
 			}
 		}
@@ -325,10 +318,10 @@ class DetermineChessPieces {
 		//squareColour[0] = squareColourAnalysis.getSquare(0);
 		//squareColour[1] = squareColourAnalysis.getSquare(1);
 
-		cout << "HSVF Square 0 colour: min: " << squareColour[0].min << " max: " << squareColour[0].max << " Square 1 colour: min: " << squareColour[1].min << " max: " << squareColour[1].max << endl;
+		//cout << "HSVF Square 0 colour: min: " << squareColour[0].min << " max: " << squareColour[0].max << " Square 1 colour: min: " << squareColour[1].min << " max: " << squareColour[1].max << endl;
 		_drawing = drawing;
 
-		printf("\n");
+		/*printf("\nChess peices: \n");
 		for(int x = 0; x < OVERSIZED_BOARD; x++) {
 			for(int y = 0; y < OVERSIZED_BOARD; y++) {
 				if(chessBoard[x][y] == '0') printf(".");
@@ -336,7 +329,7 @@ class DetermineChessPieces {
 				else printf(" ");
 			}
 			printf("\n");
-		}
+		}*/
 	}
 
 	MinMaxHSV getSquareColour(bool blackWhite) {
@@ -380,7 +373,6 @@ class DetermineChessPieces {
 	}
 
 	FPoint calculateCircle(FPoint A, FPoint B, FPoint C) {
-		printf("A: %f %f 	B: %f %f	C: %f %f\n", A.x, A.y, B.x, B.y, C.x, C.y);
 		float xDelta_a = B.x - A.x;
 		float yDelta_a = B.y - A.y;
 		float xDelta_b = C.x - B.x;
@@ -388,7 +380,6 @@ class DetermineChessPieces {
 
 		float gradientA = yDelta_a / xDelta_a;
 		float gradientB = yDelta_b / xDelta_b;
-		printf("Grad: %f %f\n", gradientA, gradientB);
 
 		float centerX = (gradientA*gradientB*(A.y - C.y) + gradientB*(A.x + B.x) - gradientA*(B.x + C.x)) / (2 * (gradientB - gradientA));
 		float centerY = -(1/gradientA) * (centerX - (A.x + B.x)/2) + (A.y + B.y) / 2;

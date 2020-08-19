@@ -45,6 +45,8 @@ class DetermineChessBoard {
 			
 			vector<LineMetadata> parallel_lines;
 			vector<LineMetadata> perpendicular_lines;
+			parallel_lines.clear();
+			perpendicular_lines.clear();
 			for (size_t j = 0; j < mergedLines.size(); j++) {
 				float gradient_next = mergedLines[j].gradient;
 				//float intercept_next = mergedLines[j].intercept;
@@ -54,13 +56,13 @@ class DetermineChessBoard {
 				if(angle < 0.03) {
 					parallel_lines.push_back(mergedLines[j]);
 				}
-				if(angle > 1.50 && angle < 1.8) {
+				if(angle > 1.4 && angle < 1.7) {
 					perpendicular_lines.push_back(mergedLines[j]);
 				}
 			}
 			if(parallel_lines.size() > 1 && perpendicular_lines.size() > 1) {
-				float minSpacing = 10;
-				float maxSpacing = minSpacing + 3;
+				float minSpacing = 8;
+				float maxSpacing = minSpacing + 7;
 				int parallel = 0;
 				vector<LineMetadata> squareCandidateParallel;
 				vector<LineMetadata> squareCandidatePerpendicular;
@@ -72,7 +74,7 @@ class DetermineChessBoard {
 					//if(mergedLines[i].gradient < -5 && parallel_lines[j].gradient < -5) printf("Spacing: %f Gradient: %f Parallel: %f Intercept: %f\n", spacing, mergedLines[i].gradient, parallel_lines[j].gradient, mergedLines[i].intercept);
 					//if(mergedLines[i].gradient < -5 && parallel_lines[j].gradient < -5) printf("Intercept: %f\n", parallel_lines[j].intercept);
 					bool previousSpacing = lineSpacing(parallel_lines[j], previous_line) > minSpacing;
-					if(spacing > minSpacing && spacing < maxSpacing && previousSpacing) {
+					if(spacing > minSpacing && spacing < maxSpacing) {
 						parallel++;
 						lineVisited[j] = true;
 						previous_line = parallel_lines[j];
@@ -89,8 +91,8 @@ class DetermineChessBoard {
 					for(int v = 0; v < perpendicular_lines.size(); v++) {
 						if(j == v) continue;
 						//printf("Checking perpendicular %f vs %f\n", perpendicular_lines[j].intercept, perpendicular_lines[v].intercept);
-						float spacing = fabs(perpendicular_lines[j].intercept - perpendicular_lines[v].intercept);
-						if(spacing > minSpacing && spacing < maxSpacing && lineSpacing(previous_line, perpendicular_lines[j]) > minSpacing) {
+						float spacing = lineSpacing(perpendicular_lines[j], perpendicular_lines[v]);
+						if(spacing > minSpacing && spacing < maxSpacing) {
 							//printf("FOUND PERPENDICULAR: %f %f %f\n", perpendicular_lines[j].intercept, perpendicular_lines[v].intercept, previous_line);
 							previous_line = perpendicular_lines[j];
 							lineVisited[j] = true;
@@ -240,7 +242,6 @@ class DetermineChessBoard {
 	}
 
 	vector<Square> getLocalSquareList() {
-		printf("GETTING SQUARES\n");
 		vector<Square> localSquareList;
 		for(int i = 0; i < OVERSIZED_BOARD; i++) {
 			for(int j = 0; j < OVERSIZED_BOARD; j++) {
@@ -248,7 +249,6 @@ class DetermineChessBoard {
 					localSquareMap[i][j].x = i;
 					localSquareMap[i][j].y = j;
 					localSquareList.push_back(localSquareMap[i][j]);
-					printf("Center: %f %f\n", localSquareMap[i][j].center.x, localSquareMap[i][j].center.y);
 				}
 			}
 		}
@@ -301,6 +301,7 @@ class DetermineChessBoard {
 	}
 
 	void asciiPrintBoard(Square (*_localSquareMap)[OVERSIZED_BOARD][OVERSIZED_BOARD]) {
+		printf("Ascii Board: \n");
 		printf("\n");
 		for(int i = -1; i < 16; i++) {
 			for(int j = 0; j < 32; j++) {
@@ -410,7 +411,7 @@ class DetermineChessBoard {
 	}
 
 	bool checkSpacingIsSquare(float spacingNorth, float spacingSouth, float spacingWest, float spacingEast) {
-		float threshold = 5;
+		float threshold = 2;
 		float spacing[] = { spacingNorth, spacingSouth, spacingWest, spacingEast };
 		for(int i = 0; i < 4; i++) {
 			for(int j = 0; j < 4; j++) {
