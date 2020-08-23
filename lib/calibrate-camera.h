@@ -3,8 +3,8 @@ class CalibrateCamera {
 	Mat K, D;
 	Mat grayFrame;
 	bool KDReadFromFile = 0;
-	int board_width = 6;
-	int board_height = 4;
+	int board_width = 5;
+	int board_height = 3;
 	int frameReference = 0;
 	bool calibRun = false;
 	float square_size = 23.3;
@@ -78,27 +78,27 @@ class CalibrateCamera {
 	void calculateCalibrationDataFromFrame(Mat _fullColourFrame) {
 		frameReference++;
 		float scale = 0.1; 
-		bool scaleImage = false;
+		bool scaleImage = true;
 		if(scaleImage) {
 			resize(_fullColourFrame, _fullColourFrame, Size(), scale, scale);
 		}
 		cvtColor( _fullColourFrame, grayFrame, COLOR_BGR2GRAY );
 		//convertToBinary(grayFrame);
 
-		if(readCalibration(K, D)) {
+		/*if(readCalibration(K, D)) {
 			//undistortImage(grayFrame);
 			printf("CALIB TRUE\n");
 			calibRun = true;
 			imshow (window_name, grayFrame);
-		}
-		/*if(!calibRun) {
+		}*/
+		if(!calibRun) {
 			Mat chessBoardImage = calibrationExecute(grayFrame);
 			if(scaleImage) {
 				resize(chessBoardImage, chessBoardImage, Size(), 0.5 / scale, 0.5 / scale);
 			}
 			imshow (window_name, chessBoardImage);
 		}
-		if(frameReference > 104 && !calibRun) {
+		if(frameReference > 904 && !calibRun) {
 			runCalibration();
 			calibRun = true;
 		}
@@ -111,7 +111,7 @@ class CalibrateCamera {
 				resize(curr, curr, Size(), 0.5 / scale, 0.5 / scale);
 			}
 			imshow (window_name, curr);
-		}*/
+		}
 	}
 
 	void undistortImage(Mat& image) {

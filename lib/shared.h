@@ -156,7 +156,36 @@ FPoint locateIntercept(LineMetadata first_line, LineMetadata second_line) {
 	float x_intercept = (float) ((second_line.intercept - first_line.intercept) / (first_line.gradient - second_line.gradient));
 	float y_intercept = (float) (second_line.intercept + second_line.gradient * x_intercept);
 
-	return { .x = x_intercept, .y = y_intercept };
+	float lowerX1 = (float) first_line.bounds[0], upperX1 = (float) first_line.bounds[2];
+	float lowerX2 = (float) second_line.bounds[0], upperX2 = (float) second_line.bounds[2];
+	float lowerY1, upperY1, lowerY2, upperY2;
+
+	printf("LowerX: Line 2: %f %f %f %f\n", (float) second_line.gradient, (float) second_line.bounds[1], (float) second_line.bounds[2], (float) second_line.bounds[3]);
+	if(first_line.bounds[1] < first_line.bounds[3]) {
+		lowerY1 = first_line.bounds[1];
+		upperY1 = first_line.bounds[3];
+	} else {
+		lowerY1 = first_line.bounds[3];
+		upperY1 = first_line.bounds[1];
+	}
+	if(second_line.bounds[1] < second_line.bounds[3]) {
+		lowerY2 = second_line.bounds[1];
+		upperY2 = second_line.bounds[3];
+	} else {
+		lowerY2 = second_line.bounds[3];
+		upperY2 = second_line.bounds[1];
+	}
+
+	printf("(1) LowerX: %f UpperX: %f\nLowerY: %f UpperY: %f\n(2) LowerX: %f UpperX: %f\nLowerY: %f UpperY: %f\n", lowerX1, upperX1, lowerY1, upperY1, lowerX2, upperX2, lowerY2, upperY2);
+	if(
+			x_intercept > lowerX1 && x_intercept < upperX1 &&
+			x_intercept > lowerX2 && x_intercept < upperX2 &&
+			y_intercept > lowerY1 && y_intercept < upperY1 &&
+			y_intercept > lowerY2 && y_intercept < upperY2 ) {
+		return { .x = x_intercept, .y = y_intercept };
+	}
+	float invalid = nan("1");
+	return { .x = invalid, .y = invalid };
 }
 
 float lineSpacing(LineMetadata first_line, LineMetadata second_line) {

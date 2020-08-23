@@ -9,7 +9,7 @@
 #define NEW_LINE_POINTS false
 #define PRINT_CONTOURS false
 #define HSV_EXPERIMENT false
-#define CALIBRATE false
+#define CALIBRATE true
 #define READ_CALIBRATION true
 #define GRADIENT_VERTICAL 999
 #define upper 5
@@ -273,7 +273,7 @@ class StreamProcessing {
 	vector<LineMetadata> determineLines(Mat& edges, vector<vector<Point> >& squares) {
 		vector<Vec4i> houghLines;
 		vector<LineMetadata> lines;
-		HoughLinesP(edges, houghLines, 1, CV_PI/180, 30, 30, 5);
+		HoughLinesP(edges, houghLines, 1, CV_PI/180, 60, 30, 5);
 		printf("Hough begin: %ld\n\n", houghLines.size());
 		for( size_t i = 0; i < houghLines.size(); i++ ) {
 			if(PRINT_HOUGH_LINES) {
@@ -660,7 +660,7 @@ class StreamProcessing {
 				if(!CALIBRATE) {
 					imshow (window_name, lastFrame);
 				}
-				waitKey(0);
+				waitKey(1000);
 			}
 			if(CALIBRATE) {
 				calibrate.calculateCalibrationDataFromFrame( decodedImage );
