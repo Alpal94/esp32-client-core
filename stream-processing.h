@@ -5,7 +5,7 @@
 #include "lib/hsv-experiment.h"
 
 #define PRINT_LINES false
-#define PRINT_HOUGH_LINES true
+#define PRINT_HOUGH_LINES false
 #define NEW_LINE_POINTS false
 #define PRINT_CONTOURS false
 #define HSV_EXPERIMENT false
@@ -646,7 +646,7 @@ class StreamProcessing {
 		if(decodedImage.data == NULL) {
 			printf("ERROR DECODING IMAGE");
 		} else {
-			printf("SUCCESSFULLY DECODED IMAGE: %d", frameReference);
+			printf("SUCCESSFULLY DECODED IMAGE: %d\n", frameReference);
 			//calibrate.undistortImage(decodedImage);
 			lastFrame = decodedImage;
 			frameReference++;
@@ -660,7 +660,7 @@ class StreamProcessing {
 				if(!CALIBRATE) {
 					imshow (window_name, lastFrame);
 				}
-				waitKey(1000);
+				waitKey(0);
 			}
 			if(CALIBRATE) {
 				calibrate.calculateCalibrationDataFromFrame( decodedImage );

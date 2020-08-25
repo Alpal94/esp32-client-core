@@ -4,7 +4,7 @@ class CalibrateCamera {
 	Mat grayFrame;
 	bool KDReadFromFile = 0;
 	int board_width = 5;
-	int board_height = 3;
+	int board_height = 4;
 	int frameReference = 0;
 	bool calibRun = false;
 	float square_size = 23.3;
@@ -44,19 +44,32 @@ class CalibrateCamera {
 		fs.release();
 	}
 
+	int closeFramesSinceLast = 0;
 	Mat calibrationExecute(Mat grayImage) {
-
 		printf("Cali running\n");
 		Size board_size = Size(board_width, board_height);
 		//int board_n = board_width * board_height;
 		bool found = false;
-		found = findChessboardCorners(grayImage, board_size, corners,  CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_FAST_CHECK | CALIB_CB_NORMALIZE_IMAGE);
-		if(found) {
-			printf("FOUND\n");
-			cornerSubPix(grayImage, corners, cv::Size(5, 5), cv::Size(-1, -1),
-				TermCriteria(cv::TermCriteria::EPS+cv::TermCriteria::MAX_ITER, 30, 0.1));
-			drawChessboardCorners(grayImage, board_size, corners, found);
+		bool circleChess = true;
+		if(circleChess) {
+			found = findChessboardCorners(grayImage, board_size, corners,  CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_FAST_CHECK | CALIB_CB_NORMALIZE_IMAGE);
+			if(found) {
+				printf("FOUND\n");
+				closeFramesSinceLast++;
+				cornerSubPix(grayImage, corners, cv::Size(5, 5), cv::Size(-1, -1),
+					TermCriteria(cv::TermCriteria::EPS+cv::TermCriteria::MAX_ITER, 30, 0.1));
+				drawChessboardCorners(grayImage, board_size, corners, found);
+			}
+
+		} else {
+			found = findCirclesGrid(grayImage, board_size, corners);
+			if(found) {
+
+				closeFramesSinceLast++;
+				drawChessboardCorners(grayImage, board_size, corners, found);
+			}
 		}
+
 		vector< Point3f > obj;
 		for (int i = 0; i < board_height; i++)
 			for (int j = 0; j < board_width; j++)
@@ -78,7 +91,7 @@ class CalibrateCamera {
 	void calculateCalibrationDataFromFrame(Mat _fullColourFrame) {
 		frameReference++;
 		float scale = 0.1; 
-		bool scaleImage = true;
+		bool scaleImage = false;
 		if(scaleImage) {
 			resize(_fullColourFrame, _fullColourFrame, Size(), scale, scale);
 		}
@@ -98,7 +111,7 @@ class CalibrateCamera {
 			}
 			imshow (window_name, chessBoardImage);
 		}
-		if(frameReference > 904 && !calibRun) {
+		if(true && frameReference == 44 && !calibRun) {
 			runCalibration();
 			calibRun = true;
 		}
