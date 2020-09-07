@@ -3,8 +3,8 @@ class CalibrateCamera {
 	Mat K, D;
 	Mat grayFrame;
 	bool KDReadFromFile = 0;
-	int board_width = 5;
-	int board_height = 4;
+	int board_width = 8;
+	int board_height = 6;
 	int frameReference = 0;
 	bool calibRun = false;
 	float square_size = 23.3;
@@ -46,6 +46,13 @@ class CalibrateCamera {
 
 	int closeFramesSinceLast = 0;
 	Mat calibrationExecute(Mat grayImage) {
+		if(closeFramesSinceLast > 0) {
+			closeFramesSinceLast++;
+			if(closeFramesSinceLast > 10) {
+				closeFramesSinceLast = 0;
+			}
+			return grayImage;
+		}
 		printf("Cali running\n");
 		Size board_size = Size(board_width, board_height);
 		//int board_n = board_width * board_height;
@@ -69,6 +76,7 @@ class CalibrateCamera {
 				drawChessboardCorners(grayImage, board_size, corners, found);
 			}
 		}
+		if(found) closeFramesSinceLast++;
 
 		vector< Point3f > obj;
 		for (int i = 0; i < board_height; i++)
@@ -111,9 +119,10 @@ class CalibrateCamera {
 			}
 			imshow (window_name, chessBoardImage);
 		}
-		if(true && frameReference == 44 && !calibRun) {
+		if(frameReference == 230 && !calibRun) {
 			runCalibration();
 			calibRun = true;
+			waitKey(0);
 		}
 		if(calibRun) {
 

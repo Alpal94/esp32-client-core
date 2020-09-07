@@ -74,6 +74,7 @@ class DetermineChessBoard {
 					printf("MERGED LINE BOUNDS: %d %d %d %d\n", mergedLines[i].bounds[0], mergedLines[i].bounds[1], mergedLines[i].bounds[2], mergedLines[i].bounds[3]);
 					printf("MERGED PARRALEL: %d %d %d %d\n", parallel_lines[i].bounds[0], parallel_lines[i].bounds[1], parallel_lines[i].bounds[2], parallel_lines[i].bounds[3]);
 					float spacing = lineSpacing(parallel_lines[j], mergedLines[i]);
+					printf("PP P Spacing: %f\n", spacing);
 					//if(mergedLines[i].gradient < -5 && parallel_lines[j].gradient < -5) printf("Spacing: %f Gradient: %f Parallel: %f Intercept: %f\n", spacing, mergedLines[i].gradient, parallel_lines[j].gradient, mergedLines[i].intercept);
 					//if(mergedLines[i].gradient < -5 && parallel_lines[j].gradient < -5) printf("Intercept: %f\n", parallel_lines[j].intercept);
 					//bool previousSpacing = lineSpacing(parallel_lines[j], previous_line) > minSpacing;

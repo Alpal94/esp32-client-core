@@ -9,7 +9,7 @@
 #define NEW_LINE_POINTS false
 #define PRINT_CONTOURS false
 #define HSV_EXPERIMENT false
-#define CALIBRATE true
+#define CALIBRATE false
 #define READ_CALIBRATION true
 #define GRADIENT_VERTICAL 999
 #define upper 5
@@ -28,6 +28,10 @@ class StreamProcessing {
 	CalibrateCamera calibrate;
 	DetermineChessBoard determineChessboard;
 	DetermineChessPieces determineChessPieces;
+
+	enum TraversalState { Left, Right, Up, Down, Forward, Back } traversalState;
+	RobotPosition robotPosition = { .x = 18, .y = 10, .z = -5};
+
 
 	vector<vector<Point> > contours;
 	vector<Vec4i> hierarchy;
@@ -101,7 +105,6 @@ class StreamProcessing {
 		ALOG("\nTime elapsed: %lld (%s)\n", microseconds, message);
 	}
 
-	RobotPosition robotPosition = { .x = 18, .y = 12, .z = -5};
 	void manageRobot() {
 
 		auto start = std::chrono::high_resolution_clock::now();
@@ -136,6 +139,7 @@ class StreamProcessing {
 				globalSquareList
 			);
 
+			robotPosition = traverseChessboard(robotPosition);
 			/*MinMaxHSV blackSquare = determineChessPieces.getSquareColour(0);
 			MinMaxHSV whiteSquare = determineChessPieces.getSquareColour(1);
 
@@ -153,7 +157,6 @@ class StreamProcessing {
 				}
 			}
 
-			robotPosition = traverseChessboard(robotPosition);
 
 			//cvtColor( lastFrame, lastFrame, COLOR_BGR2HSV );
 			Mat mask;
@@ -205,7 +208,6 @@ class StreamProcessing {
 		ALOG("\nTime elapsed: %lld\n", microseconds);
 	}
 
-	enum TraversalState { Left, Right } traversalState;
 	RobotPosition traverseChessboard(RobotPosition position) {
 		RobotPosition nextPosition = position;
 
@@ -216,14 +218,30 @@ class StreamProcessing {
 			case TraversalState::Right:
 				nextPosition.z += 0.5;
 				break;
+			case TraversalState::Forward:
+				nextPosition.x += 1.0;
+				break;
+			case TraversalState::Back:
+				nextPosition.x -= 1.0;
+				break;
 		}
-		if(nextPosition.z  < -2.5) {
-			traversalState = TraversalState::Right;
-		} else if(nextPosition.z  > 2.5) {
-			traversalState = TraversalState::Left;
+		if(traversalState == TraversalState::Right ||  traversalState == TraversalState::Left) {
+			if(nextPosition.z  < -2.5) {
+				traversalState = TraversalState::Right;
+			} else if(nextPosition.z  > 2.5) {
+				traversalState = TraversalState::Left;
+			}
+			nextPosition.y = 12;
+			nextPosition.x = 18;
+		} else if(traversalState == TraversalState::Forward ||  traversalState == TraversalState::Back) {
+			if(nextPosition.x  < 14) {
+				traversalState = TraversalState::Forward;
+			} else if(nextPosition.x  > 22) {
+				traversalState = TraversalState::Back;
+			}
+			nextPosition.z = 0;
+			nextPosition.y = 10;
 		}
-		nextPosition.y = 12;
-		nextPosition.x = 18;
 
 		if(STREAM_CAMERA) {
 			if(setRobotPosition(nextPosition)) return nextPosition;
@@ -273,7 +291,7 @@ class StreamProcessing {
 	vector<LineMetadata> determineLines(Mat& edges, vector<vector<Point> >& squares) {
 		vector<Vec4i> houghLines;
 		vector<LineMetadata> lines;
-		HoughLinesP(edges, houghLines, 1, CV_PI/180, 60, 30, 5);
+		HoughLinesP(edges, houghLines, 1, 0.5 * CV_PI/180, 50, 60, 50);
 		printf("Hough begin: %ld\n\n", houghLines.size());
 		for( size_t i = 0; i < houghLines.size(); i++ ) {
 			if(PRINT_HOUGH_LINES) {
@@ -587,7 +605,9 @@ class StreamProcessing {
 
 	public:
 	StreamProcessing() {
+
 		if(HSV_EXPERIMENT) hsv_init();
+		traversalState = TraversalState::Forward;
 			
 	}
 	void processFrame() {
@@ -686,7 +706,7 @@ class StreamProcessing {
 			processFrame();
 
 			if(CALIBRATE) {
-				calibrate.calculateCalibrationDataFromFrame( lastFrame );
+				//calibrate.calculateCalibrationDataFromFrame( lastFrame );
 			}
 		}
 		return &lastFrame;
