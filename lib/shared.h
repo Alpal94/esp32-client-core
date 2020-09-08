@@ -152,66 +152,62 @@ double distance( RobotPosition p1, RobotPosition p2 )
 	return sqrt(dx * dx + dy * dy + dz * dz);
 }
 
-FPoint locateIntercept(LineMetadata first_line, LineMetadata second_line, bool useXAxis=false) {
-	float firstLineIntercept = useXAxis ? first_line.xIntercept : first_line.intercept;
-	float secondLineIntercept = useXAxis ? second_line.xIntercept : second_line.intercept;
-	float firstLineGradient = useXAxis ? first_line.xGradient : first_line.gradient;
-	float secondLineGradient = useXAxis ? second_line.xGradient : second_line.gradient;
-
-	float x_intercept = (float) ((secondLineIntercept - secondLineIntercept) / (firstLineGradient - secondLineGradient));
-	float y_intercept = (float) (secondLineIntercept + secondLineGradient * x_intercept);
+FPoint locateIntercept(LineMetadata first_line, LineMetadata second_line, bool bounded=false) {
+	float x_intercept = (float) ((second_line.intercept - first_line.intercept) / (first_line.gradient - second_line.gradient));
+	float y_intercept = (float) (second_line.intercept + second_line.gradient * x_intercept);
 
 	float lowerX1 = (float) first_line.bounds[0], upperX1 = (float) first_line.bounds[2];
 	float lowerX2 = (float) second_line.bounds[0], upperX2 = (float) second_line.bounds[2];
 	float lowerY1, upperY1, lowerY2, upperY2;
-
-	printf("LowerX: Line 2: %f %f %f %f\n", (float) secondLineGradient, (float) second_line.bounds[1], (float) second_line.bounds[2], (float) second_line.bounds[3]);
-	if(first_line.bounds[1] < first_line.bounds[3]) {
-		lowerY1 = first_line.bounds[1];
-		upperY1 = first_line.bounds[3];
-	} else {
-		lowerY1 = first_line.bounds[3];
-		upperY1 = first_line.bounds[1];
-	}
-	if(second_line.bounds[1] < second_line.bounds[3]) {
-		lowerY2 = second_line.bounds[1];
-		upperY2 = second_line.bounds[3];
-	} else {
-		lowerY2 = second_line.bounds[3];
-		upperY2 = second_line.bounds[1];
-	}
-
-	printf("(1) LowerX: %f UpperX: %f\nLowerY: %f UpperY: %f\n(2) LowerX: %f UpperX: %f\nLowerY: %f UpperY: %f\n", lowerX1, upperX1, lowerY1, upperY1, lowerX2, upperX2, lowerY2, upperY2);
-	if(
-			x_intercept > lowerX1 && x_intercept < upperX1 &&
-			x_intercept > lowerX2 && x_intercept < upperX2 &&
-			y_intercept > lowerY1 && y_intercept < upperY1 &&
-			y_intercept > lowerY2 && y_intercept < upperY2 ) {
+	if(!bounded) {
 		return { .x = x_intercept, .y = y_intercept };
+	} else {
+		printf("PP LowerX: Line 2: %f %f %f %f\n", (float) second_line.gradient, (float) second_line.bounds[1], (float) second_line.bounds[2], (float) second_line.bounds[3]);
+		if(first_line.bounds[1] < first_line.bounds[3]) {
+			lowerY1 = first_line.bounds[1];
+			upperY1 = first_line.bounds[3];
+		} else {
+			lowerY1 = first_line.bounds[3];
+			upperY1 = first_line.bounds[1];
+		}
+		if(second_line.bounds[1] < second_line.bounds[3]) {
+			lowerY2 = second_line.bounds[1];
+			upperY2 = second_line.bounds[3];
+		} else {
+			lowerY2 = second_line.bounds[3];
+			upperY2 = second_line.bounds[1];
+		}
+
+		printf("PP (1) LowerX: %f UpperX: %f\nLowerY: %f UpperY: %f\n(2) LowerX: %f UpperX: %f\nLowerY: %f UpperY: %f\n", lowerX1, upperX1, lowerY1, upperY1, lowerX2, upperX2, lowerY2, upperY2);
+		if(
+				x_intercept > lowerX1 && x_intercept < upperX1 &&
+				x_intercept > lowerX2 && x_intercept < upperX2 &&
+				y_intercept > lowerY1 && y_intercept < upperY1 &&
+				y_intercept > lowerY2 && y_intercept < upperY2 ) {
+			return { .x = x_intercept, .y = y_intercept };
+		}
+		float invalid = nan("1");
+		return { .x = invalid, .y = invalid };
 	}
-	float invalid = nan("1");
-	return { .x = invalid, .y = invalid };
 }
 
-float lineSpacing(LineMetadata first_line, LineMetadata second_line, bool useXAxis=false) {
-	float firstLineGradient = useXAxis ? first_line.xGradient : first_line.gradient;
-	if(firstLineGradient == 0) firstLineGradient = 0.00000001;
-	float perpendicular_gradient = -1 / firstLineGradient;
+float lineSpacing(LineMetadata first_line, LineMetadata second_line) {
+	if(first_line.gradient == 0) first_line.gradient = 0.0001;
+	float perpendicular_gradient = -1 / first_line.gradient;
 
 	LineMetadata perpendicular_line = {
 		.gradient = perpendicular_gradient,
 		.intercept = 0
 	};
 
-	FPoint first_intercept = locateIntercept(first_line, perpendicular_line, useXAxis);
-	FPoint second_intercept = locateIntercept(second_line, perpendicular_line, useXAxis);
+	FPoint first_intercept = locateIntercept(first_line, perpendicular_line, false);
+	FPoint second_intercept = locateIntercept(second_line, perpendicular_line, false);
 
-	float dist = (float) fPixelDist(first_intercept, second_intercept);
-	if(isnan(dist) && !useXAxis) {
-		lineSpacing(first_line, second_line, true);
-	} else {
-		return dist;
+	float dist = fPixelDist(first_intercept, second_intercept);
+	if(isnan(dist)) {
+		printf("PP: %f,%f %f,%f Grad: p: %f f: %f s: %f Intercept: f: %f s: %f\n", first_intercept.x, first_intercept.y, second_intercept.x, second_intercept.y, perpendicular_gradient, first_line.gradient, second_line.gradient, first_line.intercept, second_line.intercept);
 	}
+	return (float) fPixelDist(first_intercept, second_intercept);
 }
 
 FPoint midPoint(FPoint first, FPoint second) {
