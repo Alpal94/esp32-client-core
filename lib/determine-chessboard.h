@@ -27,7 +27,6 @@ class DetermineChessBoard {
 		sort(mergedLines.begin(), mergedLines.end(), sortLinesGradient);
 
 		vector<bool> lineVisited((int) mergedLines.size());
-		printf("HSV: START\n");
 
 		//localSquareMap[OVERSIZED_BOARD][OVERSIZED_BOARD] = {};
 		for(int i = 0; i < OVERSIZED_BOARD; i++) {
@@ -38,7 +37,6 @@ class DetermineChessBoard {
 		
 		int noSquares = 0;
 		for (size_t i = 0; i < mergedLines.size(); i++) {
-			//pureCalcLine(mergedLines[i].gradient, mergedLines[i].intercept, squareIntercepts);
 			//if(lineVisited[i]) continue;
 			float gradient = mergedLines[i].gradient;
 			//float intercept = mergedLines[i].intercept;
@@ -52,7 +50,6 @@ class DetermineChessBoard {
 				//float intercept_next = mergedLines[j].intercept;
 				
 				float angle = angleFromGradient(gradient, gradient_next);
-				//if(mergedLines[i].gradient < -1) printf("next: intercept: %f\n", mergedLines[i].intercept);
 				if(angle < 0.03) {
 					parallel_lines.push_back(mergedLines[j]);
 				}
@@ -71,35 +68,24 @@ class DetermineChessBoard {
 				//if(mergedLines[i].gradient < -5) printf("next: intercept: %f\n", mergedLines[i].intercept);
 				for(int j = 0; j < parallel_lines.size(); j++) {
 
-					printf("MERGED LINE BOUNDS: %d %d %d %d\n", mergedLines[i].bounds[0], mergedLines[i].bounds[1], mergedLines[i].bounds[2], mergedLines[i].bounds[3]);
 					printf("MERGED PARRALEL: %d %d %d %d\n", parallel_lines[i].bounds[0], parallel_lines[i].bounds[1], parallel_lines[i].bounds[2], parallel_lines[i].bounds[3]);
 					float spacing = lineSpacing(parallel_lines[j], mergedLines[i]);
-					printf("PP P Spacing: %f\n", spacing);
-					//if(mergedLines[i].gradient < -5 && parallel_lines[j].gradient < -5) printf("Spacing: %f Gradient: %f Parallel: %f Intercept: %f\n", spacing, mergedLines[i].gradient, parallel_lines[j].gradient, mergedLines[i].intercept);
-					//if(mergedLines[i].gradient < -5 && parallel_lines[j].gradient < -5) printf("Intercept: %f\n", parallel_lines[j].intercept);
-					//bool previousSpacing = lineSpacing(parallel_lines[j], previous_line) > minSpacing;
 					if(spacing > minSpacing && spacing < maxSpacing) {
 						parallel++;
 						lineVisited[j] = true;
 						previous_line = parallel_lines[j];
-						//printf("FOUND PARALLEL\n");
 						squareCandidateParallel.push_back(parallel_lines[j]);
 
 						//pureCalcLine(parallel_lines[j].gradient, parallel_lines[j].intercept, squareIntercepts);
 					}
 				}
-				//printf("START\n");
 				int perpendicular = 0;
 				previous_line = {.gradient = 0, .intercept = 0};
 				for(int j = 0; j < perpendicular_lines.size(); j++) {
 					for(int v = 0; v < perpendicular_lines.size(); v++) {
 						if(j == v) continue;
-						//printf("Checking perpendicular %f vs %f\n", perpendicular_lines[j].intercept, perpendicular_lines[v].intercept);
-						printf("(2)MERGED LINE BOUNDS: %d %d %d %d\n", mergedLines[i].bounds[0], mergedLines[i].bounds[1], mergedLines[i].bounds[2], mergedLines[i].bounds[3]);
-						printf("MERGED PERPENDICULAR: %d %d %d %d\n", perpendicular_lines[i].bounds[0], perpendicular_lines[i].bounds[1], perpendicular_lines[i].bounds[2], perpendicular_lines[i].bounds[3]);
 						float spacing = lineSpacing(perpendicular_lines[j], perpendicular_lines[v]);
 						if(spacing > minSpacing && spacing < maxSpacing) {
-							//printf("FOUND PERPENDICULAR: %f %f %f\n", perpendicular_lines[j].intercept, perpendicular_lines[v].intercept, previous_line);
 							previous_line = perpendicular_lines[j];
 							lineVisited[j] = true;
 							squareCandidatePerpendicular.push_back(perpendicular_lines[j]);
@@ -111,8 +97,6 @@ class DetermineChessBoard {
 				if(parallel > 1 && perpendicular > 1) {
 					sort(squareCandidatePerpendicular.begin(), squareCandidatePerpendicular.end(), sortLinesIntercepts);
 					sort(squareCandidateParallel.begin(), squareCandidateParallel.end(), sortLinesIntercepts);
-					//printf("Possible square: %d %d %ld %ld\n", parallel, perpendicular, squareCandidateParallel.size(), squareCandidatePerpendicular.size());
-
 					for(int j = 0; j < squareCandidateParallel.size(); j++) {
 						for(int z = 0; z < squareCandidatePerpendicular.size() - 1; z+=1) {
 							float perpendicularXAxisAngle = angleFromGradient(squareCandidatePerpendicular[z].gradient, 0);
@@ -175,7 +159,6 @@ class DetermineChessBoard {
 
 
 							noSquares++;
-							printf("\nSquare spacing: %f\n", spacing);
 							Square square = {
 								.occupied = true,
 								.spacing = spacing,
@@ -194,10 +177,9 @@ class DetermineChessBoard {
 							if(noSquares) {
 								printSquare(rotateSquare(square, { .rotation = 0 }), _lastFrame);
 								squareColour(square, _lastFrame, _display);
-								insertSquare(&localSquareMap, square, { .spacing = 0, .rotation = xAxisAngle, .north = 0, .west = 0 }, Point(0,0));
+								printf("Origin Center: %f %f\n", square.center.x, square.center.y);
+								insertSquare(&localSquareMap, square, { .spacing = 0, .rotation = xAxisAngle, .north = 0, .west = 0 }, Point(0,0), false);
 
-								//printf("East-West GRADIENTS: %f %f\n", squareCandidateParallel[j].gradient, mergedLines[i].gradient);
-								//printf("East-West GRADIENT INTERCEPTS: %f %f\n", squareCandidateParallel[j].intercept, mergedLines[i].intercept);
 								/*pureCalcLine(mergedLines[i].gradient, mergedLines[i].intercept, squareIntercepts);
 								pureCalcLine(squareCandidatePerpendicular[z].gradient, squareCandidatePerpendicular[z].intercept, squareIntercepts);
 								pureCalcLine(squareCandidatePerpendicular[z+1].gradient, squareCandidatePerpendicular[z+1].intercept, squareIntercepts);
@@ -219,8 +201,7 @@ class DetermineChessBoard {
 				//bool matched = false;
 				Point localOffset;
 				if(updateOffset(mapOffset, &localSquareMap, localOffset)) {
-					
-					//printf("\nMatch found: offset: %f %f rotation: %f spacing: %f\n", mapOffset.north, mapOffset.west, mapOffset.rotation, mapOffset.spacing);
+					printf("OFFSET: spacing: %f rotation: %f north: %f west: %f\n", mapOffset.spacing, mapOffset.rotation, mapOffset.north, mapOffset.west);
 					for(int i = 0; i < OVERSIZED_BOARD; i++) {
 						for(int j = 0; j < OVERSIZED_BOARD; j++) {
 							if(localSquareMap[i][j].occupied) {
@@ -228,10 +209,8 @@ class DetermineChessBoard {
 							}
 						}
 					}
-					//printf("\nEnd\n");
 
 				} else {
-					//printf("\nNo match\n");
 				}
 			}
 		} else {
@@ -242,6 +221,8 @@ class DetermineChessBoard {
 				mapOffset.spacing = localOrigin.spacing;
 				mapOffset.north = 0;
 				mapOffset.west = 0;
+
+				printf("Origin: Assigning square map\n");
 				for(int i = 0; i < OVERSIZED_BOARD; i++) {
 					for(int j = 0; j < OVERSIZED_BOARD; j++) {
 						squareMap[i][j] = localSquareMap[i][j];
@@ -257,6 +238,7 @@ class DetermineChessBoard {
 		asciiPrintBoard(&localSquareMap);
 		drawing.push_back(squareIntercepts);
 		squares = drawing;
+		fflush(stdout);
 	}
 
 	vector<Square> getLocalSquareList() {
@@ -302,7 +284,6 @@ class DetermineChessBoard {
 
 			float squareWidth = realPixelDistance;
 			float distance = calcRealDist(realPixelDistance);
-			//printf("Distance: %f %f %f %f\n", distance, realPixelDistance, dx, dy);
 			
 			chessboardToCamera.calced = true;
 			chessboardToCamera.distance = distance;
@@ -319,8 +300,8 @@ class DetermineChessBoard {
 	}
 
 	void asciiPrintBoard(Square (*_localSquareMap)[OVERSIZED_BOARD][OVERSIZED_BOARD]) {
-		printf("Ascii Board: \n");
-		printf("\n");
+		printf("Ascii Board: _\n");
+		printf("_\n");
 		for(int i = -1; i < 16; i++) {
 			for(int j = 0; j < 32; j++) {
 				if(i < 0) {
@@ -343,13 +324,13 @@ class DetermineChessBoard {
 					else printf(" %d ", squareMap[j%16][i%16].occupied);
 				}
 			}
-			printf("\n");
+			printf("_\n");
 		}
 	}
 
 	// TODO: If known squares are also kept in a list, could save iterations for efficiency
 	bool updateOffset(MapOffset& offset, Square (*_localSquareMap)[OVERSIZED_BOARD][OVERSIZED_BOARD], Point &localOffset) {
-		float threshold = 15;
+		float threshold = 2;
 		for(int gx = 0; gx < OVERSIZED_BOARD; gx++) {
 			for(int gy = 0; gy < OVERSIZED_BOARD; gy++) {
 				for(int lx = 0; lx < OVERSIZED_BOARD; lx++) {
@@ -396,16 +377,23 @@ class DetermineChessBoard {
 
 		Square origin = (*_squareMap)[OVERSIZED_BOARD/2][OVERSIZED_BOARD/2];
 		Square tSquare = translateSquare(rotateSquare(square, offset), offset);
+		//if(debug) printf("OFFSET: spacing: %f rotation: %f north: %f west: %f\n", offset.spacing, offset.rotation, offset.north, offset.west);
+		if(debug) printf("ORIGIN: occupied: %d spacing: %f posx: %d posy: %d\n", origin.occupied, origin.spacing, origin.x, origin.y);
 		if(origin.occupied) {
 			float spacing = origin.spacing;
 			FPoint originCenter = origin.center;
 			FPoint squareCenter = tSquare.center;
 
 			FPoint vector = { .x = (squareCenter.x - originCenter.x) / spacing, .y = (squareCenter.y - originCenter.y) / spacing };
-			int posX = OVERSIZED_BOARD / 2 + (int) round(vector.x) + localOffset.x;
-			int posY = OVERSIZED_BOARD / 2 + (int) round(vector.y) + localOffset.y;
+			if(debug) printf("Origin center: %f,%f Square center: %f,%f Spacing: %f Vector: %f %f\n", originCenter.x, originCenter.y, squareCenter.x, squareCenter.y, spacing, vector.x, vector.y);
+			int posX = OVERSIZED_BOARD / 2 + (int) round(vector.x);
+			int posY = OVERSIZED_BOARD / 2 + (int) round(vector.y);
+
+			if(posX == OVERSIZED_BOARD / 2 && posY == OVERSIZED_BOARD) return;
+
 			tSquare.global_x = posX;
 			tSquare.global_y = posY;
+			tSquare.occupied = true;
 
 			//printf("Is occupied: %d x: %d y: %d\n", (*_squareMap)[posX][posY].occupied, posX, posY);
 			if(!(*_squareMap)[posX][posY].occupied) {
@@ -417,8 +405,10 @@ class DetermineChessBoard {
 				//printf("Warning: OCCUPIED\n");
 			}
 		} else {
+			if(debug) printf("Origin:  UPDATING ORIGIN\n");
 			tSquare.global_x = 0;
 			tSquare.global_y = 0;
+			tSquare.occupied = true;
 			(*_squareMap)[OVERSIZED_BOARD/2][OVERSIZED_BOARD/2] = tSquare;
 			//printSquare(square);
 		}
@@ -504,9 +494,6 @@ class DetermineChessBoard {
 		averageSaturation = averageSaturation / pow(2 * sampleSize, 2);
 		averageValue = averageValue / pow(2 * sampleSize, 2);
 		
-		printf("HSV: %d %d Average: %d %d %d Min: %d %d %d Max %d %d %d\n", (int) _square.center.x, (int) _square.center.y, averageHue, averageSaturation, averageValue, minHue, minSaturation, minValue, maxHue, maxSaturation, maxValue);
-
-
 		cvtColor(lastFrame, _display, COLOR_BGR2HSV);
 		inRange( _display, Scalar(minHue,minSaturation,minValue), Scalar(maxHue,maxSaturation,maxValue), _display );
 

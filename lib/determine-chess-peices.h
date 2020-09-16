@@ -119,14 +119,12 @@ class ColourAnalysis {
 			colourRange.hist.insert({key, 1});
 		}
 		if(init) {
-			if(thresh == 5) cout << "HSVS: INIT: " << hsvColour << endl;
 			colourRange.min = hsvColour;
 			colourRange.max = hsvColour;
 			colourRange.sum = hsvColour;
 
 			count++;
 		} else {
-			if(thresh == 5) cout << "HSVS: Max: " << colourRange.max << " VS: " << hsvColour << endl;
 				
 			//maxDiff(colourRange.max, hsvColour) < 40 && maxDiff(colourRange.min, hsvColour) < 40
 

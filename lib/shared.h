@@ -162,7 +162,6 @@ FPoint locateIntercept(LineMetadata first_line, LineMetadata second_line, bool b
 	if(!bounded) {
 		return { .x = x_intercept, .y = y_intercept };
 	} else {
-		printf("PP LowerX: Line 2: %f %f %f %f\n", (float) second_line.gradient, (float) second_line.bounds[1], (float) second_line.bounds[2], (float) second_line.bounds[3]);
 		if(first_line.bounds[1] < first_line.bounds[3]) {
 			lowerY1 = first_line.bounds[1];
 			upperY1 = first_line.bounds[3];
@@ -178,7 +177,6 @@ FPoint locateIntercept(LineMetadata first_line, LineMetadata second_line, bool b
 			upperY2 = second_line.bounds[1];
 		}
 
-		printf("PP (1) LowerX: %f UpperX: %f\nLowerY: %f UpperY: %f\n(2) LowerX: %f UpperX: %f\nLowerY: %f UpperY: %f\n", lowerX1, upperX1, lowerY1, upperY1, lowerX2, upperX2, lowerY2, upperY2);
 		if(
 				x_intercept > lowerX1 && x_intercept < upperX1 &&
 				x_intercept > lowerX2 && x_intercept < upperX2 &&
@@ -205,7 +203,6 @@ float lineSpacing(LineMetadata first_line, LineMetadata second_line) {
 
 	float dist = fPixelDist(first_intercept, second_intercept);
 	if(isnan(dist)) {
-		printf("PP: %f,%f %f,%f Grad: p: %f f: %f s: %f Intercept: f: %f s: %f\n", first_intercept.x, first_intercept.y, second_intercept.x, second_intercept.y, perpendicular_gradient, first_line.gradient, second_line.gradient, first_line.intercept, second_line.intercept);
 	}
 	return (float) fPixelDist(first_intercept, second_intercept);
 }
@@ -265,7 +262,10 @@ Square translateSquare(Square square, MapOffset offset) {
 	square.southWest.y += offset.north;
 	square.southEast.y += offset.north;
 
-	square.center = squareCenter(square);
+	if(offset.north || offset.west) { 
+		printf("OK: offset: %f %f\n", offset.north, offset.west);
+		square.center = squareCenter(square);
+	}
 
 	return square;
 }
