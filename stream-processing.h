@@ -61,15 +61,32 @@ class StreamProcessing {
 		const int kernel_size = 3;
 		//int thresh = 100;
 		//int max_thresh = 255;
-		RNG rng(12345);
 
 
 		resize(gray_lastFrame, gray_lastFrame, Size(), scale, scale);
 		resize(lastFrame, lastFrame, Size(), scale, scale);
 
+		char fileName2[42];
+		sprintf(fileName2, "training/autoencoder/sample-%d.jpg", frameReference);
+		imwrite(fileName2, lastFrame);
+
 		//bool useLaplacianSharpening = false;
 
 		bilateralFilter(lastFrame, detected_edges, 5, 30, 30);
+		GaussianBlur( detected_edges, detected_edges, Size(3,3), 0 );
+
+		/*Mat channels[3];
+		Mat hsv;
+		cvtColor(lastFrame, hsv, COLOR_BGR2HSV);
+		split(hsv, channels);
+		Mat processed = channels[0];
+		inRange(processed, Scalar(105), Scalar(254), processed);
+		imshow("Processed", processed);
+		waitKey(0);*/
+
+		//detected_edges = channels[0];
+		//imshow("Curr: ", detected_edges);
+		//waitKey(0);
 		cvtColor( detected_edges, detected_edges, COLOR_BGR2GRAY );
 		//adaptiveThreshold(detected_edges, detected_edges, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 3, 0);
 
@@ -78,13 +95,18 @@ class StreamProcessing {
 		//resize(detected_edges, detected_edges, Size(), 0.5, 0.5);
 		//resize(detected_edges, detected_edges, Size(), 2.0, 2.0);
 
-		Canny( detected_edges, detected_edges, lowThreshold, lowThreshold*ratio, kernel_size );
 
+		Canny( detected_edges, detected_edges, lowThreshold, lowThreshold*ratio, kernel_size );
 		_contours.clear();
 		//CHAIN_APPROX_NONE
 		findContours( detected_edges, _contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+		imshow("Canny", detected_edges);
+		char fileName[42];
+		sprintf(fileName, "training/samples/sample-%d.jpg", frameReference);
+		imwrite(fileName, detected_edges);
 
 		Mat drawing;
+		RNG rng(12345);
 		bool isContours = false;
 		//bool showTrueColour = false;
 		if(isContours) {
@@ -109,7 +131,7 @@ class StreamProcessing {
 
 		auto start = std::chrono::high_resolution_clock::now();
 		//cvtColor( lastFrame, lastFrame, COLOR_BGR2HSV );
-		float scale = 0.1;
+		float scale = 1.0;
 		Mat detected_edges = evaluateContours(scale, contours);
 
 		vector<vector<Point> > squares;
@@ -119,89 +141,101 @@ class StreamProcessing {
 		vector<LineMetadata> mergedLines = determineLines(detected_edges, squares);
 		if(true) {
 			timer(startDetermineLines, (char*) "DetermineLines");
+
+			Mat detectedSquares;
+			lastFrame.copyTo(detectedSquares);
+			detectedSquares.setTo(Scalar(0,0,0));
+
 			determineChessboard.findChessboardSquares(
 					mergedLines,
 					squares,
 					gray_lastFrame,
-					lastFrame,
+					detectedSquares,
 					display,
 					robotPosition
 			);
-			vector<Square> localSquareList = determineChessboard.getLocalSquareList();
-			vector<Square> globalSquareList = determineChessboard.getGlobalSquareList();
-			determineChessPieces.findChessPieces(
-				gray_lastFrame,
-				lastFrame,
-				contours,
-				hierarchy,
-				squares,
-				localSquareList,
-				globalSquareList
-			);
 
-			robotPosition = traverseChessboard(robotPosition);
-			/*MinMaxHSV blackSquare = determineChessPieces.getSquareColour(0);
-			MinMaxHSV whiteSquare = determineChessPieces.getSquareColour(1);
+			if(false) {
+				char fileName[42];
+				sprintf(fileName, "training/targets/target-%d.jpg", frameReference);
+				imwrite(fileName, detectedSquares);
 
-			cout << "Black square: " << blackSquare.min << " " << blackSquare.max << " White square: " << whiteSquare.min << " " << whiteSquare.max << endl;
+				vector<Square> localSquareList = determineChessboard.getLocalSquareList();
+				vector<Square> globalSquareList = determineChessboard.getGlobalSquareList();
+				determineChessPieces.findChessPieces(
+					gray_lastFrame,
+					lastFrame,
+					contours,
+					hierarchy,
+					squares,
+					localSquareList,
+					globalSquareList
+				);
 
-			printf("Unordered map size: %ld\n", blackSquare.hist.size());
+				robotPosition = traverseChessboard(robotPosition);
+				MinMaxHSV blackSquare = determineChessPieces.getSquareColour(0);
+				MinMaxHSV whiteSquare = determineChessPieces.getSquareColour(1);
 
-			for ( auto it = blackSquare.hist.begin(); it != blackSquare.hist.end(); ++it ) {
-				if(it->second > 1) {
-					string key = it->first;
-					uchar b = (uchar) key[0];
-					uchar g = (uchar) key[1];
-					uchar r = (uchar) key[2];
-					printf("Key: %d %d %d count: %d\n", b,g,r, it->second);
+				cout << "Black square: " << blackSquare.min << " " << blackSquare.max << " White square: " << whiteSquare.min << " " << whiteSquare.max << endl;
+
+				/*printf("Unordered map size: %ld\n", blackSquare.hist.size());
+
+				for ( auto it = blackSquare.hist.begin(); it != blackSquare.hist.end(); ++it ) {
+					if(it->second > 1) {
+						string key = it->first;
+						uchar b = (uchar) key[0];
+						uchar g = (uchar) key[1];
+						uchar r = (uchar) key[2];
+						printf("Key: %d %d %d count: %d\n", b,g,r, it->second);
+					}
 				}
+
+
+				//cvtColor( lastFrame, lastFrame, COLOR_BGR2HSV );
+				Mat mask;
+				Mat white;
+				Mat black;
+				Mat next;
+
+				Mat3b bgr;
+				Mat3b hsv(whiteSquare.min);
+				cvtColor(hsv, bgr, COLOR_HSV2BGR); 
+				Vec3b white_bgr_min = whiteSquare.min; //bgr.at<Vec3b>(0,0);
+
+				Mat3b hsv2(whiteSquare.max);
+				cvtColor(hsv2, bgr, COLOR_HSV2BGR); 
+				Vec3b white_bgr_max = whiteSquare.max; //bgr.at<Vec3b>(0,0);
+
+				Mat3b hsv3(blackSquare.min);
+				cvtColor(hsv3, bgr, COLOR_HSV2BGR); 
+				Vec3b black_bgr_min = blackSquare.min;//bgr.at<Vec3b>(0,0);
+
+				Mat3b hsv4(blackSquare.max);
+				cvtColor(hsv4, bgr, COLOR_HSV2BGR); 
+				Vec3b black_bgr_max = blackSquare.max;//bgr.at<Vec3b>(0,0);
+
+				lastFrame.copyTo(next);
+				inRange( lastFrame, Scalar(0,0,0), Scalar(255,255,255), mask );
+				cvtColor( mask, mask, COLOR_GRAY2BGR );
+				next.setTo(Scalar(0,0,0), mask);
+
+				inRange( lastFrame, Scalar(white_bgr_min[0], white_bgr_min[1], white_bgr_min[2]), Scalar(white_bgr_max[0], white_bgr_max[1], white_bgr_max[2]), mask );
+				cvtColor( mask, mask, COLOR_GRAY2BGR );
+				next.setTo(Scalar(0,255,0), mask);
+				//bitwise_or(mask, white, white);
+
+				inRange( lastFrame, black_bgr_min, black_bgr_max, mask );
+				cvtColor( mask, mask, COLOR_GRAY2BGR );
+				next.setTo(Scalar(0,0,255), mask);
+				//bitwise_and(mask, lastFrame, lastFrame);*/
 			}
-
-
-			//cvtColor( lastFrame, lastFrame, COLOR_BGR2HSV );
-			Mat mask;
-			Mat white;
-			Mat black;
-			Mat next;
-
-			Mat3b bgr;
-			Mat3b hsv(whiteSquare.min);
-			cvtColor(hsv, bgr, COLOR_HSV2BGR); 
-			Vec3b white_bgr_min = whiteSquare.min; //bgr.at<Vec3b>(0,0);
-
-			Mat3b hsv2(whiteSquare.max);
-			cvtColor(hsv2, bgr, COLOR_HSV2BGR); 
-			Vec3b white_bgr_max = whiteSquare.max; //bgr.at<Vec3b>(0,0);
-
-			Mat3b hsv3(blackSquare.min);
-			cvtColor(hsv3, bgr, COLOR_HSV2BGR); 
-			Vec3b black_bgr_min = blackSquare.min;//bgr.at<Vec3b>(0,0);
-
-			Mat3b hsv4(blackSquare.max);
-			cvtColor(hsv4, bgr, COLOR_HSV2BGR); 
-			Vec3b black_bgr_max = blackSquare.max;//bgr.at<Vec3b>(0,0);
-
-			lastFrame.copyTo(next);
-			inRange( lastFrame, Scalar(0,0,0), Scalar(255,255,255), mask );
-			cvtColor( mask, mask, COLOR_GRAY2BGR );
-			next.setTo(Scalar(0,0,0), mask);
-
-			inRange( lastFrame, Scalar(white_bgr_min[0], white_bgr_min[1], white_bgr_min[2]), Scalar(white_bgr_max[0], white_bgr_max[1], white_bgr_max[2]), mask );
-			cvtColor( mask, mask, COLOR_GRAY2BGR );
-			next.setTo(Scalar(0,255,0), mask);
-			//bitwise_or(mask, white, white);
-
-			inRange( lastFrame, black_bgr_min, black_bgr_max, mask );
-			cvtColor( mask, mask, COLOR_GRAY2BGR );
-			next.setTo(Scalar(0,0,255), mask);
-			//bitwise_and(mask, lastFrame, lastFrame);*/
 
 		}
 		//bitwise_or(black, white, lastFrame);
 		//lastFrame = next;
 		if(!HSV_EXPERIMENT) drawSquares(lastFrame, squares, gray_lastFrame.rows, gray_lastFrame.cols);
-		resize(lastFrame, lastFrame, Size(), 0.5 / scale, 0.5 / scale);
-		resize(detected_edges, detected_edges, Size(), 0.5 / scale, 0.5 / scale);
+		//resize(lastFrame, lastFrame, Size(), 0.5 / scale, 0.5 / scale);
+		//resize(detected_edges, detected_edges, Size(), 0.5 / scale, 0.5 / scale);
 
 		auto elapsed = std::chrono::high_resolution_clock::now() - start;
 		long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
@@ -291,14 +325,14 @@ class StreamProcessing {
 	vector<LineMetadata> determineLines(Mat& edges, vector<vector<Point> >& squares) {
 		vector<Vec4i> houghLines;
 		vector<LineMetadata> lines;
-		HoughLinesP(edges, houghLines, 1, 0.5 * CV_PI/180, 50, 60, 50);
+		HoughLinesP(edges, houghLines, 1, 0.5 * CV_PI/180, 120, 80, 100);
 		printf("Hough begin: %ld\n\n", houghLines.size());
 		for( size_t i = 0; i < houghLines.size(); i++ ) {
 			if(PRINT_HOUGH_LINES) {
 				line( lastFrame,
 					Point(houghLines[i][0], houghLines[i][1]),
 					Point(houghLines[i][2], houghLines[i][3]),
-					Scalar(0,0,255), 1, 1);
+					Scalar(0,0,255), 3, 3);
 			}
 			float gradient, intercept, xIntercept, xGradient;
 			if(twoPointLineCalc(gradient, intercept, xIntercept, xGradient, 
@@ -623,6 +657,11 @@ class StreamProcessing {
 			if(READ_CALIBRATION) {
 				calibrate.calculateFrameFromSavedCalibrationdata(lastFrame);
 			}
+
+			char fileName[42];
+			sprintf(fileName, "orig-calibrated/jpeg%d.jpg", frameReference);
+			imwrite(fileName, lastFrame);
+
 			cvtColor(lastFrame, HSV_lastFrame, COLOR_BGR2HSV);
 			cvtColor(lastFrame, gray_lastFrame, COLOR_BGR2GRAY );
 			/*GaussianBlur( gray_lastFrame, gray_lastFrame, Size(5,5), 0 );
@@ -647,7 +686,7 @@ class StreamProcessing {
 			//inRange( gray_lastFrame, Scalar(160), Scalar(205), gray_lastFrame );
 			//namedWindow(window_name, WINDOW_AUTOSIZE );
 			manageRobot();
-			char fileName[42];
+
 			sprintf(fileName, "recorded/jpeg%d.jpg", frameReference);
 			imwrite(fileName, lastFrame);
 		}
@@ -668,6 +707,7 @@ class StreamProcessing {
 		} else {
 			printf("SUCCESSFULLY DECODED IMAGE: %d\n", frameReference);
 			//calibrate.undistortImage(decodedImage);
+			
 			lastFrame = decodedImage;
 			frameReference++;
 			processFrame();

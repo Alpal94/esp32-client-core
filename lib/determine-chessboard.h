@@ -34,7 +34,25 @@ class DetermineChessBoard {
 				localSquareMap[i][j].occupied = false;
 			}
 		}
-		
+
+		vector<LineMetadata> stripped;
+		for (size_t i = 0; i < mergedLines.size(); i++) {
+			bool duplicate = false;
+			for(size_t j = 0; j < stripped.size(); j++) {
+				float angle = angleFromGradient(stripped[j].gradient, mergedLines[i].gradient);
+				float spacing = lineSpacing(mergedLines[j], mergedLines[i]);
+				if(fabs(angle) < 0.03 &&  spacing < 10) {
+					duplicate = true;
+					break;
+				}
+			}
+			if(!duplicate) {
+				stripped.push_back(mergedLines[i]);
+			}
+		}
+		mergedLines = stripped;
+
+		printf("Stripped: %ld %ld\n", stripped.size(), mergedLines.size());
 		int noSquares = 0;
 		for (size_t i = 0; i < mergedLines.size(); i++) {
 			//if(lineVisited[i]) continue;
@@ -57,13 +75,17 @@ class DetermineChessBoard {
 					perpendicular_lines.push_back(mergedLines[j]);
 				}
 			}
+			printf("Parallel lines: %ld\nPerpedicular lines: %ld\n", parallel_lines.size(), perpendicular_lines.size());
+
+			//SLOW RUN HERE
 			if(parallel_lines.size() > 1 && perpendicular_lines.size() > 1) {
-				float minSpacing = 8;
-				float maxSpacing = minSpacing + 7;
+				float minSpacing = 120;
+				float maxSpacing = minSpacing + 60;
 				int parallel = 0;
 				vector<LineMetadata> squareCandidateParallel;
 				vector<LineMetadata> squareCandidatePerpendicular;
 				squareCandidateParallel.clear();
+				squareCandidatePerpendicular.clear();
 				LineMetadata previous_line = {.gradient = 0, .intercept = 0};
 				//if(mergedLines[i].gradient < -5) printf("next: intercept: %f\n", mergedLines[i].intercept);
 				for(int j = 0; j < parallel_lines.size(); j++) {
@@ -80,20 +102,22 @@ class DetermineChessBoard {
 					}
 				}
 				int perpendicular = 0;
-				previous_line = {.gradient = 0, .intercept = 0};
+				vector<bool> perpendicularLineInserted((int) perpendicular_lines.size());
 				for(int j = 0; j < perpendicular_lines.size(); j++) {
 					for(int v = 0; v < perpendicular_lines.size(); v++) {
 						if(j == v) continue;
+						if(perpendicularLineInserted[j]) continue;
 						float spacing = lineSpacing(perpendicular_lines[j], perpendicular_lines[v]);
 						if(spacing > minSpacing && spacing < maxSpacing) {
-							previous_line = perpendicular_lines[j];
 							lineVisited[j] = true;
+							perpendicularLineInserted[j] = true;
 							squareCandidatePerpendicular.push_back(perpendicular_lines[j]);
 							//pureCalcLine(perpendicular_lines[j].gradient, perpendicular_lines[j].intercept, squareIntercepts);
 							perpendicular++;
 						}
 					}
 				}
+				printf("Perpendicular: %ld\n Parallel: %ld\n", squareCandidatePerpendicular.size(), squareCandidateParallel.size());
 				if(parallel > 1 && perpendicular > 1) {
 					sort(squareCandidatePerpendicular.begin(), squareCandidatePerpendicular.end(), sortLinesIntercepts);
 					sort(squareCandidateParallel.begin(), squareCandidateParallel.end(), sortLinesIntercepts);

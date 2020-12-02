@@ -53,6 +53,10 @@ class ColourAnalysis {
 
 		if(colourReferenceType == 1) floodFill(Point2f(center.x, center.y), _contour, squareColour[colourReferenceType], 5, init);
 		else floodFill(Point2f(center.x, center.y), _contour, squareColour[colourReferenceType], 7, init);
+		cout << "Black max: " << squareColour[0].max << endl;
+		cout << "Black min: " << squareColour[0].min << endl;
+		cout << "White max: " << squareColour[1].max << endl;
+		cout << "WHite min: " << squareColour[1].min << endl;
 		
 
 		/*imshow("hello", lastFrame);
@@ -108,9 +112,10 @@ class ColourAnalysis {
 		cvtColor(bgr, hsv, COLOR_BGR2HSV); 
 
 		Vec3b hsvColour = hsv.at<Vec3b>(0,0);
-		hsvColour = lastFrame.at<Vec3b>(Point((int)point.x, (int)point.y)); 
+		//hsvColour = lastFrame.at<Vec3b>(Point((int)point.x, (int)point.y)); 
 		//if(thresh == 5) cout << "Type: " << hsvColour << endl;
 
+		cout << "Flood: " << hsvColour << endl;
 		string key = "   ";
 		for(int i = 0; i < 3; i++) key[i] = (uchar) hsvColour[i] / 5;
 		try {
