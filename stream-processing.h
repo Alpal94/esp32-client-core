@@ -5,7 +5,7 @@
 #include "lib/hsv-experiment.h"
 
 #define PRINT_LINES false
-#define PRINT_HOUGH_LINES true
+#define PRINT_HOUGH_LINES false
 #define NEW_LINE_POINTS false
 #define PRINT_CONTOURS false
 #define HSV_EXPERIMENT false
@@ -100,7 +100,7 @@ class StreamProcessing {
 		_contours.clear();
 		//CHAIN_APPROX_NONE
 		findContours( detected_edges, _contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
-		imshow("Canny", detected_edges);
+		//imshow("Canny", detected_edges);
 		char fileName[42];
 		sprintf(fileName, "training/samples/sample-%d.jpg", frameReference);
 		imwrite(fileName, detected_edges);
@@ -150,7 +150,7 @@ class StreamProcessing {
 					mergedLines,
 					squares,
 					gray_lastFrame,
-					detectedSquares,
+					lastFrame,
 					display,
 					robotPosition
 			);

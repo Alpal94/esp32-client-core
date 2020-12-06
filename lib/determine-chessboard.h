@@ -39,9 +39,15 @@ class DetermineChessBoard {
 		for (size_t i = 0; i < mergedLines.size(); i++) {
 			bool duplicate = false;
 			for(size_t j = 0; j < stripped.size(); j++) {
+				if(j == i) continue;
 				float angle = angleFromGradient(stripped[j].gradient, mergedLines[i].gradient);
-				float spacing = lineSpacing(mergedLines[j], mergedLines[i]);
-				if(fabs(angle) < 0.03 &&  spacing < 10) {
+				
+				float spacing = fabs(stripped[j].intercept - mergedLines[i].intercept);
+				float spacingX = fabs(stripped[j].xIntercept - mergedLines[i].xIntercept);
+				//printf("Spacing: %f SpacingX: %f for (%f,%f) (%f,%f)\n", spacing, spacingX, mergedLines[j].intercept, mergedLines[i].intercept, mergedLines[j].xIntercept, mergedLines[i].xIntercept);
+				//printf("Spacing: %f or %f. Angle: %f\n", spacing, spacingX, angle);
+				//printf("Stripped size:  %ld\n", stripped.size());
+				if(angle < 0.03 && (fabs(spacingX) < 30 || fabs(spacing) < 30)) {
 					duplicate = true;
 					break;
 				}
@@ -50,6 +56,8 @@ class DetermineChessBoard {
 				stripped.push_back(mergedLines[i]);
 			}
 		}
+
+		printf("\n");
 		mergedLines = stripped;
 
 		printf("Stripped: %ld %ld\n", stripped.size(), mergedLines.size());
@@ -76,6 +84,17 @@ class DetermineChessBoard {
 				}
 			}
 			printf("Parallel lines: %ld\nPerpedicular lines: %ld\n", parallel_lines.size(), perpendicular_lines.size());
+			for(int j = 0; j < parallel_lines.size(); j++) {
+				Point x1 = Point(parallel_lines[j].bounds[0], parallel_lines[j].bounds[1]);
+				Point x2 = Point(parallel_lines[j].bounds[2], parallel_lines[j].bounds[3]);
+				line(_lastFrame, x1, x2, Scalar(255, 0,0), 3, 3);
+			}
+			for(int j = 0; j < perpendicular_lines.size(); j++) {
+				Point x1 = Point(perpendicular_lines[j].bounds[0], perpendicular_lines[j].bounds[1]);
+				Point x2 = Point(perpendicular_lines[j].bounds[2], perpendicular_lines[j].bounds[3]);
+				line(_lastFrame, x1, x2, Scalar(0, 255,0), 3, 3);
+			}
+			return;
 
 			//SLOW RUN HERE
 			if(parallel_lines.size() > 1 && perpendicular_lines.size() > 1) {
@@ -90,7 +109,6 @@ class DetermineChessBoard {
 				//if(mergedLines[i].gradient < -5) printf("next: intercept: %f\n", mergedLines[i].intercept);
 				for(int j = 0; j < parallel_lines.size(); j++) {
 
-					printf("MERGED PARRALEL: %d %d %d %d\n", parallel_lines[i].bounds[0], parallel_lines[i].bounds[1], parallel_lines[i].bounds[2], parallel_lines[i].bounds[3]);
 					float spacing = lineSpacing(parallel_lines[j], mergedLines[i]);
 					if(spacing > minSpacing && spacing < maxSpacing) {
 						parallel++;
@@ -117,6 +135,7 @@ class DetermineChessBoard {
 						}
 					}
 				}
+				//HERE
 				printf("Perpendicular: %ld\n Parallel: %ld\n", squareCandidatePerpendicular.size(), squareCandidateParallel.size());
 				if(parallel > 1 && perpendicular > 1) {
 					sort(squareCandidatePerpendicular.begin(), squareCandidatePerpendicular.end(), sortLinesIntercepts);
@@ -126,7 +145,6 @@ class DetermineChessBoard {
 							float perpendicularXAxisAngle = angleFromGradient(squareCandidatePerpendicular[z].gradient, 0);
 							float parallelXAxisAngle = angleFromGradient(squareCandidateParallel[j].gradient, 0);
 							float xAxisAngle = perpendicularXAxisAngle < parallelXAxisAngle ? perpendicularXAxisAngle : parallelXAxisAngle;
-
 
 							LineMetadata northLine, southLine, westLine, eastLine;
 							bool mergedLinesNorthSouth = parallelXAxisAngle > M_PI/2 ? true : false;
@@ -443,7 +461,7 @@ class DetermineChessBoard {
 	}
 
 	bool checkSpacingIsSquare(float spacingNorth, float spacingSouth, float spacingWest, float spacingEast) {
-		float threshold = 2;
+		float threshold = 30;
 		float spacing[] = { spacingNorth, spacingSouth, spacingWest, spacingEast };
 		for(int i = 0; i < 4; i++) {
 			for(int j = 0; j < 4; j++) {
