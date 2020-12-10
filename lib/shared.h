@@ -80,6 +80,10 @@ struct Square {
 	int global_y;
 };
 
+enum Orientation {
+	NE, NW, SE, SW
+};
+
 struct RobotPosition {
 	float x;
 	float y;
@@ -100,6 +104,23 @@ struct MinMaxHSV {
 	Vec3b comp;
 	unordered_map<string, int> hist;
 };
+
+void updateSquareCorner(Square &square, FPoint point, Orientation orientation) {
+	switch(orientation) {
+		case NE:
+			square.northEast = point;
+			break;
+		case NW:
+			square.northWest = point;
+			break;
+		case SE:
+			square.southEast = point;
+			break;
+		case SW:
+			square.southWest = point;
+			break;
+	}
+}
 
 float angleFromGradient(float gradient_first, float gradient_second) {
 	return atan(fabs((gradient_first - gradient_second) / (1 + gradient_first * gradient_second)));
