@@ -5,9 +5,9 @@
 #include "lib/hsv-experiment.h"
 
 #define PRINT_LINES false
-#define PRINT_HOUGH_LINES false
+#define PRINT_HOUGH_LINES true
 #define NEW_LINE_POINTS false
-#define PRINT_CONTOURS false
+#define PRINT_CONTOURS true
 #define HSV_EXPERIMENT false
 #define CALIBRATE false
 #define READ_CALIBRATION true
@@ -55,7 +55,7 @@ class StreamProcessing {
 
 	Mat evaluateContours(float scale, vector<vector<Point> > &_contours) {
 		Mat dst, detected_edges;
-		int lowThreshold = 40;
+		int lowThreshold = 20;
 		//const int max_lowThreshold = 100;
 		const int ratio = 3;
 		const int kernel_size = 3;
@@ -107,14 +107,11 @@ class StreamProcessing {
 
 		Mat drawing;
 		RNG rng(12345);
-		bool isContours = false;
-		//bool showTrueColour = false;
-		if(isContours) {
+		if(PRINT_CONTOURS) {
 
-			drawing = Mat::zeros( detected_edges.size(), CV_8UC3 );
 			for( int i = 0; i < _contours.size(); i++) {
 				Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-				drawContours( drawing, _contours, i, color, 2, 8, hierarchy, 0, Point() );
+				drawContours( lastFrame, _contours, i, color, 2, 8, hierarchy, 0, Point() );
 			}
 		}
 		return detected_edges;
@@ -325,7 +322,7 @@ class StreamProcessing {
 	vector<LineMetadata> determineLines(Mat& edges, vector<vector<Point> >& squares) {
 		vector<Vec4i> houghLines;
 		vector<LineMetadata> lines;
-		HoughLinesP(edges, houghLines, 1, 0.5 * CV_PI/180, 120, 80, 100);
+		HoughLinesP(edges, houghLines, 1, 0.5 * CV_PI/180, 100, 80, 100);
 		printf("Hough begin: %ld\n\n", houghLines.size());
 		for( size_t i = 0; i < houghLines.size(); i++ ) {
 			if(PRINT_HOUGH_LINES) {
