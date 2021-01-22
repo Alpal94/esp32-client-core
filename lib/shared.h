@@ -74,6 +74,8 @@ struct Square {
 	FPoint southEast;
 	FPoint southWest;
 
+	LineMetadata lines[4];
+
 	int x;
 	int y;
 	int global_x;

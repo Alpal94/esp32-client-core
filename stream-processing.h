@@ -5,9 +5,9 @@
 #include "lib/hsv-experiment.h"
 
 #define PRINT_LINES false
-#define PRINT_HOUGH_LINES true
+#define PRINT_HOUGH_LINES false
 #define NEW_LINE_POINTS false
-#define PRINT_CONTOURS true
+#define PRINT_CONTOURS false
 #define HSV_EXPERIMENT false
 #define CALIBRATE false
 #define READ_CALIBRATION true
@@ -100,7 +100,17 @@ class StreamProcessing {
 		_contours.clear();
 		//CHAIN_APPROX_NONE
 		findContours( detected_edges, _contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
-		//imshow("Canny", detected_edges);
+
+		bool FILTER_ENCLOSED = false;
+		if(FILTER_ENCLOSED) {
+			rectangle(detected_edges, Point(0, 0), Point(1600, 1200), 0, -1);
+			for(int i = 0; i < hierarchy.size(); i++) {
+				if(hierarchy[i][2] != -1) {
+					drawContours( detected_edges, _contours, i, 255, 1);
+				}
+			}
+			imshow("Canny", detected_edges);
+		}
 		char fileName[42];
 		sprintf(fileName, "training/samples/sample-%d.jpg", frameReference);
 		imwrite(fileName, detected_edges);
@@ -127,7 +137,19 @@ class StreamProcessing {
 	void manageRobot() {
 
 		auto start = std::chrono::high_resolution_clock::now();
-		//cvtColor( lastFrame, lastFrame, COLOR_BGR2HSV );
+		rectangle(lastFrame, Point(0, 0), Point(1600, 100), 0, -1);
+		rectangle(lastFrame, Point(0, 1100), Point(1600, 1200), 0, -1);
+		rectangle(lastFrame, Point(0, 0), Point(100, 1200), 0, -1);
+		rectangle(lastFrame, Point(1500, 0), Point(1600, 1200), 0, -1);
+
+		Mat hsv_lastFrame, mask, mask_exclude;
+		cvtColor( lastFrame, hsv_lastFrame, COLOR_BGR2HSV );
+		inRange(hsv_lastFrame, Scalar(0,0,0), Scalar(179, 255, 255), mask);
+		inRange(hsv_lastFrame, Scalar(40,0,0), Scalar(135, 255, 255), mask_exclude);
+		cvtColor( mask, mask, COLOR_GRAY2BGR);
+		//bitwise_not(lastFrame, lastFrame, mask_exclude);
+		//bitwise_and(mask, lastFrame, lastFrame);
+		//cvtColor( lastFrame, lastFrame, COLOR_HSV2BGR );
 		float scale = 1.0;
 		Mat detected_edges = evaluateContours(scale, contours);
 
@@ -136,8 +158,8 @@ class StreamProcessing {
 		//cvtColor( lastFrame, lastFrame, COLOR_BGR2HSV );
 		auto startDetermineLines = std::chrono::high_resolution_clock::now();
 		vector<LineMetadata> mergedLines = determineLines(detected_edges, squares);
+		timer(startDetermineLines, (char*) "DetermineLines");
 		if(true) {
-			timer(startDetermineLines, (char*) "DetermineLines");
 
 			Mat detectedSquares;
 			lastFrame.copyTo(detectedSquares);
@@ -322,7 +344,7 @@ class StreamProcessing {
 	vector<LineMetadata> determineLines(Mat& edges, vector<vector<Point> >& squares) {
 		vector<Vec4i> houghLines;
 		vector<LineMetadata> lines;
-		HoughLinesP(edges, houghLines, 1, 0.5 * CV_PI/180, 100, 80, 100);
+		HoughLinesP(edges, houghLines, 1, 0.5 * CV_PI/180, 120, 80, 100);
 		printf("Hough begin: %ld\n\n", houghLines.size());
 		for( size_t i = 0; i < houghLines.size(); i++ ) {
 			if(PRINT_HOUGH_LINES) {
@@ -715,7 +737,9 @@ class StreamProcessing {
 				//}
 			} else {
 				if(!CALIBRATE) {
-					imshow (window_name, lastFrame);
+					Mat display_mat;
+					resize(lastFrame, display_mat, Size(), 0.9, 0.9);
+					imshow (window_name, display_mat);
 				}
 				waitKey(0);
 			}
