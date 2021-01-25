@@ -263,6 +263,8 @@ class DetermineChessBoard {
 			printf("SquarePos: %f %f\n", vector.x, vector.y);
 			printf("ls: %f %f %f %f %f\n", northXAxisAngle, southXAxisAngle, northLine.gradient, southLine.gradient, squareList[i].spacing);
 		}
+		int posX = 0, posY = 0;
+		int lastSquareIndex = -1;
 		for(int i = 0; i < squareList.size(); i++) {
 			LineMetadata northLine = squareList[i].lines[0];
 			LineMetadata southLine = squareList[i].lines[2];
@@ -271,29 +273,47 @@ class DetermineChessBoard {
 			float southXAxisAngle = direction * angleFromGradient(southLine.gradient, 0);
 
 
-			if(i) {
-				Square a = squareList[i];
-				Square b = squareList[i-1];
-				float spacing = a.spacing > b.spacing ? b.spacing : a.spacing;
-				if(fabs(a.center.y - b.center.y) < spacing * 0.2 && fabs(a.center.x - b.center.x) < spacing * 0.2) continue;
-					
-			}
 
 			if(fabs(northLine.gradient - southLine.gradient) > 0.02) {
 				continue;
 			}
+
 			float upperFilter = 0.08;
 			float lowerFilter = 0.0;
 			if(northXAxisAngle > upperFilter || northXAxisAngle < lowerFilter || southXAxisAngle < lowerFilter || southXAxisAngle > upperFilter) {
 				continue;
 			}
-			insertSquare(&localSquareMap, squareList[i], { .spacing = 0, .rotation = -squareList[i].rotation, .north = 0, .west = 0 }, Point(0,0), _lastFrame, true);
+
+			if(i) {
+				Square a = squareList[i];
+				Square b = squareList[lastSquareIndex];
+				float spacing = a.spacing > b.spacing ? b.spacing : a.spacing;
+
+
+				if(fabs(a.center.y - b.center.y) < spacing * 0.2 && fabs(a.center.x - b.center.x) < spacing * 0.2) {
+
+					continue;
+				}
+					
+				if(fabs(a.center.y - b.center.y) < spacing * 0.2) {
+					if(fabs(a.center.x - b.center.x) > spacing * (1 + 0.2)) continue;
+					posX++;
+				} else {
+					posX=0;
+					posY++;
+				}
+			}
+
+			printSquare(squareList[i], _lastFrame);
+			lastSquareIndex = i;
+			insertSquare(&localSquareMap, posX, posY, squareList[i], { .spacing = 0, .rotation = -squareList[i].rotation, .north = 0, .west = 0 }, Point(0,0), _lastFrame, true);
 			count++;
 		}
 		printf("ls: Square list size stripped: %d\n", count); 
 		//Compare squares here	
 
-		if(squareMap[OVERSIZED_BOARD/2][OVERSIZED_BOARD/2].occupied) {
+		//Deprecated
+		/*if(squareMap[OVERSIZED_BOARD/2][OVERSIZED_BOARD/2].occupied) {
 			//Square globalOrigin = squareMap[OVERSIZED_BOARD/2][OVERSIZED_BOARD/2];
 			Square tLocalOrigin = translateSquare(rotateSquare(localSquareMap[OVERSIZED_BOARD/2][OVERSIZED_BOARD/2], mapOffset), mapOffset);
 			if(tLocalOrigin.occupied) {
@@ -329,7 +349,7 @@ class DetermineChessBoard {
 					}
 				}
 			}
-		}
+		}*/
 
 		/*if(calculateChessboardCamera()) {
 			//printf("Chessboard camera position calculated\n");
@@ -420,7 +440,7 @@ class DetermineChessBoard {
 					if(j%16 == 8 && i%16 == 8 && (*_localSquareMap)[j%16][i%16].occupied) printf(" %c ", 'X');
 					else printf(" %d ", (*_localSquareMap)[j%16][i%16].occupied);
 					if((*_localSquareMap)[j%16][i%16].occupied) {
-						printSquare(rotateSquare((*_localSquareMap)[j%16][i%16], { .rotation = 0/*-(*_localSquareMap)[j%16][i%16].rotation*/ }), _lastFrame);
+						//printSquare(rotateSquare((*_localSquareMap)[j%16][i%16], { .rotation = 0/*-(*_localSquareMap)[j%16][i%16].rotation*/ }), _lastFrame);
 					}
 				} else {
 					if(j == 16) printf("    ");
@@ -579,7 +599,7 @@ class DetermineChessBoard {
 
 		return lineX < compX;
 	}
-	void insertSquare(Square (*_squareMap)[OVERSIZED_BOARD][OVERSIZED_BOARD], Square square, MapOffset offset, Point localOffset, Mat &_lastFrame, bool debug=false) {
+	void insertSquare(Square (*_squareMap)[OVERSIZED_BOARD][OVERSIZED_BOARD], int posX, int posY, Square square, MapOffset offset, Point localOffset, Mat &_lastFrame, bool debug=false) {
 
 		Square origin = (*_squareMap)[OVERSIZED_BOARD/2][OVERSIZED_BOARD/2];
 		Square tSquare = translateSquare(rotateSquare(square, offset), offset);
@@ -592,10 +612,6 @@ class DetermineChessBoard {
 
 			FPoint vector = { .x = (squareCenter.x - originCenter.x) / spacing, .y = (squareCenter.y - originCenter.y) / spacing };
 			if(debug) printf("Origin center: %f,%f Square center: %f,%f Spacing: %f Vector: %f %f\n", originCenter.x, originCenter.y, squareCenter.x, squareCenter.y, spacing, vector.x, vector.y);
-			int posX = OVERSIZED_BOARD / 2 + (int) round(vector.x);
-			int posY = OVERSIZED_BOARD / 2 + (int) round(vector.y);
-
-			if(posX == OVERSIZED_BOARD / 2 && posY == OVERSIZED_BOARD) return;
 
 			tSquare.global_x = posX;
 			tSquare.global_y = posY;
@@ -608,24 +624,23 @@ class DetermineChessBoard {
 				}
 				(*_squareMap)[posX][posY] = tSquare;
 				if(debug) {
+//					if(posX == 16 && posY == 13 || posX == 15 && posY == 12 || posX == 15 && posY == 11) {
 					//printSquare(tSquare, _lastFrame);
 				}
 			} else {
 				if(posX > 10 && posY < 12) {
 					printf("Rejected: %d %d spacing: %f vector:  %f %f\t", posX, posY, origin.spacing, vector.x, vector.y);
 					printf("Origin center: %f,%f Square center: %f,%f Spacing: %f Vector: %f %f\n", originCenter.x, originCenter.y, squareCenter.x, squareCenter.y, spacing, vector.x, vector.y);
-					//printSquare(tSquare, _lastFrame);
-					//printSquare((*_squareMap)[posX][posY], _lastFrame);
 				}
-				//printf("Warning: OCCUPIED\n");
-			}
+				printf("Warning: OCCUPIED\n");
+			} 
 		} else {
 			if(debug) printf("Origin:  UPDATING ORIGIN\n");
 			tSquare.global_x = 0;
 			tSquare.global_y = 0;
 			tSquare.occupied = true;
-			(*_squareMap)[OVERSIZED_BOARD/2][OVERSIZED_BOARD/2] = tSquare;
-			printSquare(tSquare, _lastFrame);
+			(*_squareMap)[posX][posY] = tSquare;
+			//printSquare(square, _lastFrame);
 		}
 	}
 
