@@ -47,7 +47,6 @@ struct LineMetadata {
 	float xGradient;
 	float relevance;
 	Vec4i bounds;
-	std::vector<SegmentMetadata> segments;
 	std::vector<cv::Point> line;
 };
 

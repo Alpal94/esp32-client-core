@@ -295,8 +295,10 @@ class DetermineChessBoard {
 			}
 
 			if(i) {
+				if(lastSquareIndex < 0) lastSquareIndex = 0;
 				Square a = squareList[i];
 				Square b = squareList[lastSquareIndex];
+				printf("Last square index: %d %d\n", lastSquareIndex, i);
 				float spacing = a.spacing > b.spacing ? b.spacing : a.spacing;
 
 
@@ -368,7 +370,10 @@ class DetermineChessBoard {
 		asciiPrintBoard(&localSquareMap, _lastFrame);
 		//calcPerfectBoard(&localSquareMap, _lastFrame);
 		drawing.push_back(squareIntercepts);
+
 		squares = drawing;
+		squareList.clear();
+		mergedLines.clear();
 		fflush(stdout);
 	}
 
