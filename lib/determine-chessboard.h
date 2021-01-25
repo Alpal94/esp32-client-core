@@ -68,8 +68,7 @@ class DetermineChessBoard {
 		printf("Stripped: %ld %ld\n", stripped.size(), mergedLines.size());
 		int noSquares = 0;
 		for (size_t i = 0; i < mergedLines.size(); i++) {
-			pureCalcLine(mergedLines[i].gradient, mergedLines[i].intercept, squareIntercepts, _lastFrame);
-			pureCalcLineX(mergedLines[i].xGradient, mergedLines[i].xIntercept, squareIntercepts, _lastFrame);
+			//pureCalcLineX(mergedLines[i].xGradient, mergedLines[i].xIntercept, squareIntercepts, _lastFrame);
 			//if(lineVisited[i]) continue;
 			float gradient = mergedLines[i].gradient;
 			//float intercept = mergedLines[i].intercept;
@@ -118,12 +117,12 @@ class DetermineChessBoard {
 					float spacing = lineSpacing(parallel_lines[j], mergedLines[i]);
 					printf("Parallel line spacing: %f\n", spacing);
 					if(spacing > minSpacing && spacing < maxSpacing) {
+
 						parallel++;
 						lineVisited[j] = true;
 						previous_line = parallel_lines[j];
 						squareCandidateParallel.push_back(parallel_lines[j]);
-						pureCalcLine(parallel_lines[j].gradient, parallel_lines[j].intercept, squareIntercepts, _lastFrame);
-						pureCalcLineX(parallel_lines[j].xGradient, parallel_lines[j].xIntercept, squareIntercepts, _lastFrame);
+						//pureCalcLineX(parallel_lines[j].xGradient, parallel_lines[j].xIntercept, squareIntercepts, _lastFrame);
 					}
 				}
 				int perpendicular = 0;
@@ -138,8 +137,8 @@ class DetermineChessBoard {
 							lineVisited[j] = true;
 							perpendicularLineInserted[j] = true;
 							squareCandidatePerpendicular.push_back(perpendicular_lines[j]);
-							pureCalcLine(perpendicular_lines[j].gradient, perpendicular_lines[j].intercept, squareIntercepts, _lastFrame);
-							pureCalcLineX(perpendicular_lines[j].xGradient, perpendicular_lines[j].xIntercept, squareIntercepts, _lastFrame);
+							//pureCalcLine(perpendicular_lines[j].gradient, perpendicular_lines[j].intercept, _lastFrame);
+							//pureCalcLineX(perpendicular_lines[j].xGradient, perpendicular_lines[j].xIntercept, squareIntercepts, _lastFrame);
 							perpendicular++;
 						}
 					}
@@ -195,8 +194,11 @@ class DetermineChessBoard {
 							float spacingWest = fPixelDist(northWest, southWest);
 							float spacingEast = fPixelDist(northEast, southEast);
 
+
 							if(!checkSpacingIsSquare(spacingNorth, spacingSouth, spacingWest, spacingEast)) {
-								printf("Warning: not a square.  Spacing NSWE: %f %f %f %f\n", spacingNorth, spacingSouth, spacingWest, spacingEast);
+								if(fabs(mergedLines[i].gradient == 0.0) && mergedLines[i].intercept < 300) {
+									printf("Warning: not a square.  Spacing NSWE: %f %f %f %f\n", spacingNorth, spacingSouth, spacingWest, spacingEast);
+								}
 								continue;
 							}
 
@@ -223,7 +225,15 @@ class DetermineChessBoard {
 								.lines = { northLine, eastLine, southLine, westLine }
 								
 							};
-
+							/*if(fabs(mergedLines[i].gradient == 0.0) && mergedLines[i].intercept < 300 && southLine.gradient == 0 && northLine.gradient == 0) {
+								if(westLine.xIntercept > 800 && westLine.xIntercept < 1100) {
+									pureCalcLine(northLine.gradient, northLine.intercept, _lastFrame);
+									pureCalcLine(southLine.gradient, southLine.intercept, _lastFrame);
+									pureCalcLine(eastLine.gradient, eastLine.intercept, _lastFrame);
+									pureCalcLine(westLine.gradient, westLine.intercept, _lastFrame);
+								}
+									printSquare(square, _lastFrame);
+							}*/
 							//pureCalcLine(mergedLines[i].gradient, mergedLines[i].intercept, squareIntercepts, _lastFrame);
 							//pureCalcLine(squareCandidatePerpendicular[z].gradient, squareCandidatePerpendicular[z].intercept, squareIntercepts, _lastFrame);
 							//pureCalcLine(squareCandidatePerpendicular[z+1].gradient, squareCandidatePerpendicular[z+1].intercept, squareIntercepts, _lastFrame);
@@ -661,11 +671,10 @@ class DetermineChessBoard {
 	}
 
 	void pureCalcLine(
-		float gradient, float intercept, vector<Point>& line,
+		float gradient, float intercept, 
 		Mat &gray_lastFrame,
 		float _start = 0, float _end = COLS
 	) {
-		return;
 		float start = _start < _end ? _start : _end;
 		float end = _start < _end ? _end : _start;
 
@@ -802,6 +811,7 @@ class DetermineChessBoard {
 	}
 
 	static bool sortLinesIntercepts(LineMetadata a, LineMetadata b) {
+		if(a.xIntercept > 0 && a.xIntercept < 1600 && b.xIntercept > 0 && b.xIntercept < 1600) return a.xIntercept < b.xIntercept;
 		return a.intercept < b.intercept;
 	}
 
