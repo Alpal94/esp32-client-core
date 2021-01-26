@@ -387,7 +387,7 @@ class DetermineChessBoard {
 	}
 
 	float calcRealDist(float realSquareWidth) {
-		float fieldWidth = realSquareWidth * COLS;
+		float fieldWidth = realSquareWidth * 160;
 		return fieldWidth / CAM_RATIO;
 	}
 
@@ -634,7 +634,7 @@ class DetermineChessBoard {
 	void pureCalcLine(
 		float gradient, float intercept, 
 		Mat &gray_lastFrame,
-		float _start = 0, float _end = COLS
+		float _start = 0, float _end = 160
 	) {
 		float start = _start < _end ? _start : _end;
 		float end = _start < _end ? _end : _start;
@@ -664,8 +664,8 @@ class DetermineChessBoard {
 		float calcedY = intercept;
 		Point point1((int) calcedY, 0);
 		
-		calcedY = (float) 1200 * gradient + intercept;
-		Point point2((int) calcedY, 1200);
+		calcedY = (float) ROWS * gradient + intercept;
+		Point point2((int) calcedY, ROWS);
 		cv::line( gray_lastFrame,
 			point1,
 			point2,

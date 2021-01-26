@@ -377,48 +377,9 @@ class StreamProcessing {
 
 		contourTime = std::chrono::high_resolution_clock::now();
 
-		if(PRINT_LINES) {
-			for( size_t i = 0; i < lines.size(); i++) {
-				squares.push_back(calcPrintLine(lines[i]));
-				
-			}
-		}
 		return lines;
 	}
 
-	vector<Point> calcPrintLine(LineMetadata line) {
-		float gradient = line.gradient;
-	       	float intercept = line.intercept;
-		float xGradient = line.xGradient;
-	       	float xIntercept = line.xIntercept;
-		printf("Gradient: %f\n", gradient);
-
-		vector<Point> linePoints;
-		linePoints.clear();
-
-		if(false && !isnan(xGradient) && !isnan(xIntercept) && !isinf(xGradient) && !isinf(xIntercept)) {
-			for( size_t x = 0; x < ROWS; x++ ) {
-				float y = x * xGradient + xIntercept;
-				if(y > 0 && y < COLS) {
-					Point point(y,x);
-					linePoints.push_back(point);
-				}
-			}
-		} else if(!isnan(gradient) && !isnan(intercept) && !isinf(gradient) && !isinf(intercept)) {
-			printf("Print normal: %f %f\n", gradient, intercept);
-			for( size_t x = 0; x < COLS; x++ ) {
-				float y = x * gradient + intercept;
-				if(y > 0 && y < ROWS) {
-					Point point(x,y);
-					linePoints.push_back(point);
-				}
-			}
-		} else {
-			printf("Warning: INVALID LINE\n");
-		}
-
-		return linePoints;
-	}
 	static bool sortSegmentsX(SegmentMetadata a, SegmentMetadata b) {
 		return a.start.x < b.start.x;
 	}
@@ -495,28 +456,6 @@ class StreamProcessing {
 		} else {
 			for( size_t j = startIndex; j < endIndex; j++) {
 				line.push_back(contour[j]);		
-			}
-		}
-	}
-
-	void pureCalcLine(float gradient, float intercept, vector<Point>& line, size_t start=0, size_t end=COLS) {
-
-		for( size_t j = start; j < end; j++) {
-			float calcedY = (float) j * gradient + intercept;
-			Point linePoint(j, (int) calcedY);
-			
-			if(		linePoint.x < gray_lastFrame.cols &&
-					linePoint.y < gray_lastFrame.rows &&
-					linePoint.y >= 0 &&
-					linePoint.x >= 0 ) {
-				
-				line.push_back(linePoint);
-			}
-			if(gradient >= GRADIENT_VERTICAL && calcedY > 0 && calcedY < COLS) {
-				for(size_t z = 0; z < ROWS; z++) {
-					Point verticalPoint(j, z);
-					line.push_back(verticalPoint);
-				}
 			}
 		}
 	}

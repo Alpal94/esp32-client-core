@@ -13,8 +13,8 @@
 
 #define M_PI           3.14159265358979323846
 
-#define ROWS 120
-#define COLS 160
+#define ROWS 1200
+#define COLS 1600
 
 #define OVERSIZED_BOARD 16
 

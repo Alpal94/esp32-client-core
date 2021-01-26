@@ -2,10 +2,11 @@
 
 using namespace cv;
 using namespace std;
-
+#define FROWS 120
+#define FCOLS 160
 class ColourAnalysis {
 	private:
-	bool seen[COLS][ROWS] = {};
+	bool seen[FCOLS][FROWS] = {};
 	MinMaxHSV pieceColour;
 
 	MinMaxHSV squareColour[2];
@@ -96,12 +97,12 @@ class ColourAnalysis {
 	private:
 	void floodFill(Point2f point, vector<Point>& contour, MinMaxHSV &colourRange, float thresh, bool init) {
 		if(init) {
-			for(int i = 0; i < COLS; i++) memset(seen[i], 0, sizeof(seen[i]));
+			for(int i = 0; i < FCOLS; i++) memset(seen[i], 0, sizeof(seen[i]));
 			colourRange.hist.clear();
 			count = 0;
 		}
 		
-		if(point.x > COLS || point.y > ROWS || point.x < 0 || point.y < 0) return;
+		if(point.x > FCOLS || point.y > FROWS || point.x < 0 || point.y < 0) return;
 		if(seen[(int)point.x][(int)point.y]) return;
 		if(pointPolygonTest(contour, point, !!thresh) < thresh) return;
 
@@ -180,11 +181,11 @@ class ColourAnalysis {
 		marker.clear();
 
 		for(int x = -size; x < size; x++) {	
-			if(point.x+x < 0 || point.x+x > COLS) continue;
+			if(point.x+x < 0 || point.x+x > FCOLS) continue;
 			marker.push_back(Point(point.x+x, point.y));
 		}
 		for(int y = -size; y < size; y++) {	
-			if(point.y+y < 0 || point.y+y > ROWS) continue;
+			if(point.y+y < 0 || point.y+y > FROWS) continue;
 			marker.push_back(Point(point.x, point.y+y));
 		}
 		drawing.push_back(marker);
@@ -201,7 +202,7 @@ class DetermineChessPieces {
 	MinMaxHSV squareColour[2];
 	char chessBoard[OVERSIZED_BOARD][OVERSIZED_BOARD] = {};
 
-	ContourMap contourMap[COLS][ROWS];
+	ContourMap contourMap[FCOLS][FROWS];
 	vector<vector<Point> > contours;
 	vector<vector<Point> > drawing;
 	vector<Vec4i> hierarchy;
@@ -222,9 +223,9 @@ class DetermineChessPieces {
 
 		hierarchy = _hierarchy;
 
-		//contourMap[COLS][ROWS] = {};
-		for(int i = 0; i < COLS; i++) {
-			for(int j = 0; j < ROWS; j++) {
+		//contourMap[FCOLS][FROWS] = {};
+		for(int i = 0; i < FCOLS; i++) {
+			for(int j = 0; j < FROWS; j++) {
 				contourMap[i][j].active = false;
 			}
 		}
@@ -265,7 +266,7 @@ class DetermineChessPieces {
 			vector<int> contoursEvaluated;
 			for(int x = centerX - spacingOffset; x < centerX + spacingOffset; x++) {
 				for(int y = centerY - spacingOffset; y < centerY + spacingOffset; y++) {
-					if(x < COLS && y < ROWS && x >= 0 && y >= 0 && contourMap[x][y].active) {
+					if(x < FCOLS && y < FROWS && x >= 0 && y >= 0 && contourMap[x][y].active) {
 						
 						bool skip = false;
 						for(int i = 0; i < contoursEvaluated.size(); i++) { 
@@ -345,11 +346,11 @@ class DetermineChessPieces {
 		marker.clear();
 
 		for(int x = -size; x < size; x++) {	
-			if(point.x+x < 0 || point.x+x > COLS) continue;
+			if(point.x+x < 0 || point.x+x > FCOLS) continue;
 			marker.push_back(Point(point.x+x, point.y));
 		}
 		for(int y = -size; y < size; y++) {	
-			if(point.y+y < 0 || point.y+y > ROWS) continue;
+			if(point.y+y < 0 || point.y+y > FROWS) continue;
 			marker.push_back(Point(point.x, point.y+y));
 		}
 		drawing.push_back(marker);
