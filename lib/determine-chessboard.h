@@ -288,12 +288,6 @@ class DetermineChessBoard {
 				continue;
 			}
 
-			/*float upperFilter = 0.08;
-			float lowerFilter = 0.0;
-			if(northXAxisAngle > upperFilter || northXAxisAngle < lowerFilter || southXAxisAngle < lowerFilter || southXAxisAngle > upperFilter) {
-				continue;
-			}*/
-
 			if(i) {
 				if(lastSquareIndex < 0) lastSquareIndex = 0;
 				Square a = squareList[i];
@@ -325,46 +319,6 @@ class DetermineChessBoard {
 		}
 		printf("ls: Square list size stripped: %d\n", count); 
 		//Compare squares here	
-
-		//Deprecated
-		/*if(squareMap[OVERSIZED_BOARD/2][OVERSIZED_BOARD/2].occupied) {
-			//Square globalOrigin = squareMap[OVERSIZED_BOARD/2][OVERSIZED_BOARD/2];
-			Square tLocalOrigin = translateSquare(rotateSquare(localSquareMap[OVERSIZED_BOARD/2][OVERSIZED_BOARD/2], mapOffset), mapOffset);
-			if(tLocalOrigin.occupied) {
-
-				//bool matched = false;
-				Point localOffset;
-				if(updateOffset(mapOffset, &localSquareMap, localOffset)) {
-					//printf("OFFSET: spacing: %f rotation: %f north: %f west: %f\n", mapOffset.spacing, mapOffset.rotation, mapOffset.north, mapOffset.west);
-					for(int i = 0; i < OVERSIZED_BOARD; i++) {
-						for(int j = 0; j < OVERSIZED_BOARD; j++) {
-							if(localSquareMap[i][j].occupied) {
-								insertSquare(&squareMap, localSquareMap[i][j], mapOffset, Point(0,0), _lastFrame, false);
-							}
-						}
-					}
-
-				} else {
-				}
-			}
-		} else {
-			Square localOrigin = localSquareMap[OVERSIZED_BOARD/2][OVERSIZED_BOARD/2];
-			originalRobotPosition = currRobotPosition;
-			if(localOrigin.occupied) {
-				mapOffset.rotation = 0;
-				mapOffset.spacing = localOrigin.spacing;
-				mapOffset.north = 0;
-				mapOffset.west = 0;
-
-				printf("Origin: Assigning square map\n");
-				for(int i = 0; i < OVERSIZED_BOARD; i++) {
-					for(int j = 0; j < OVERSIZED_BOARD; j++) {
-						squareMap[i][j] = localSquareMap[i][j];
-					}
-				}
-			}
-		}*/
-
 		/*if(calculateChessboardCamera()) {
 			//printf("Chessboard camera position calculated\n");
 		}*/
