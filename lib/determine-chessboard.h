@@ -288,11 +288,11 @@ class DetermineChessBoard {
 				continue;
 			}
 
-			float upperFilter = 0.08;
+			/*float upperFilter = 0.08;
 			float lowerFilter = 0.0;
 			if(northXAxisAngle > upperFilter || northXAxisAngle < lowerFilter || southXAxisAngle < lowerFilter || southXAxisAngle > upperFilter) {
 				continue;
-			}
+			}*/
 
 			if(i) {
 				if(lastSquareIndex < 0) lastSquareIndex = 0;
@@ -311,6 +311,8 @@ class DetermineChessBoard {
 					if(fabs(a.center.x - b.center.x) > spacing * (1 + 0.2)) continue;
 					posX++;
 				} else {
+					//if(fabs(a.center.y - b.center.y) > spacing * (1 + 0.1)) continue;
+					//if(fPixelDist(a.southWest, b.northWest) > 5) continue;
 					posX=0;
 					posY++;
 				}
