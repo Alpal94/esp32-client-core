@@ -6,7 +6,7 @@ using namespace std;
 #define FCOLS 160
 class ColourAnalysis {
 	private:
-	bool seen[FCOLS][FROWS] = {};
+	bool seen[COLS][ROWS] = {};
 	MinMaxHSV pieceColour;
 
 	MinMaxHSV squareColour[2];
@@ -33,11 +33,11 @@ class ColourAnalysis {
 
 	MinMaxHSV squareColourAnalysis(Square _square, int colourReferenceType, bool init, vector<vector<Point> > &_drawing) {
 		drawing = _drawing;
-		FPoint southEast = rotatePoint(_square.southEast, -_square.rotation);
-		FPoint northWest = rotatePoint(_square.northWest, -_square.rotation);
-		FPoint southWest = rotatePoint(_square.southWest, -_square.rotation);
-		FPoint northEast = rotatePoint(_square.northEast, -_square.rotation);
-		FPoint center = rotatePoint(_square.center, -_square.rotation);
+		FPoint southEast = rotatePoint(_square.southEast, _square.rotation);
+		FPoint northWest = rotatePoint(_square.northWest, _square.rotation);
+		FPoint southWest = rotatePoint(_square.southWest, _square.rotation);
+		FPoint northEast = rotatePoint(_square.northEast, _square.rotation);
+		FPoint center = rotatePoint(_square.center, _square.rotation);
 
 		float gradient = ((float) southEast.y - (float) northWest.y) / ((float) southEast.x - (float) northWest.x);
 		float intercept = (float) southEast.y - gradient * ((float) southEast.x);
@@ -52,13 +52,26 @@ class ColourAnalysis {
 		_contour.push_back(fPointToPoint(northWest));
 		_contour.push_back(fPointToPoint(northEast));
 
+		/*if(colourReferenceType) printf("WHITE: \n");
+		if(colourReferenceType) printf("BLACK: \n");*/
 		if(colourReferenceType == 1) floodFill(Point2f(center.x, center.y), _contour, squareColour[colourReferenceType], 5, init);
 		else floodFill(Point2f(center.x, center.y), _contour, squareColour[colourReferenceType], 7, init);
-		cout << "Black max: " << squareColour[0].max << endl;
-		cout << "Black min: " << squareColour[0].min << endl;
-		cout << "White max: " << squareColour[1].max << endl;
-		cout << "WHite min: " << squareColour[1].min << endl;
-		
+
+		cout << endl;
+		if(false) {
+			cout << "Black max: " << toGrey(squareColour[0].max) << endl;
+			cout << "Black min: " << toGrey(squareColour[0].min) << endl;
+			cout << "White max: " << toGrey(squareColour[1].max) << endl;
+			cout << "White min: " << toGrey(squareColour[1].min) << endl;
+		} else {
+			cout << "Black max: " << squareColour[0].max << endl;
+			cout << "Black min: " << squareColour[0].min << endl;
+			cout << "White max: " << squareColour[1].max << endl;
+			cout << "White min: " << squareColour[1].min << endl;
+		}
+		for(int i = 0; i < 1; i++) {
+			printMarker(Point((int) _square.center.x+i,(int) _square.center.y+1), drawing, 40);	
+		}
 
 		/*imshow("hello", lastFrame);
 		waitKey(0);*/
@@ -102,7 +115,7 @@ class ColourAnalysis {
 			count = 0;
 		}
 		
-		if(point.x > FCOLS || point.y > FROWS || point.x < 0 || point.y < 0) return;
+		if(point.x > COLS || point.y > ROWS || point.x < 0 || point.y < 0) return;
 		if(seen[(int)point.x][(int)point.y]) return;
 		if(pointPolygonTest(contour, point, !!thresh) < thresh) return;
 
@@ -110,13 +123,13 @@ class ColourAnalysis {
 
 		Mat3b hsv;
 		Mat3b bgr(lastFrame.at<Vec3b>(Point((int)point.x, (int)point.y)));
-		cvtColor(bgr, hsv, COLOR_BGR2HSV); 
-
+		//cvtColor(bgr, hsv, COLOR_BGR2HSV); 
+		hsv = bgr;
 		Vec3b hsvColour = hsv.at<Vec3b>(0,0);
 		//hsvColour = lastFrame.at<Vec3b>(Point((int)point.x, (int)point.y)); 
 		//if(thresh == 5) cout << "Type: " << hsvColour << endl;
 
-		cout << "Flood: " << hsvColour << endl;
+		//cout << toGrey(hsvColour) << " ";
 		string key = "   ";
 		for(int i = 0; i < 3; i++) key[i] = (uchar) hsvColour[i] / 5;
 		try {
@@ -134,7 +147,7 @@ class ColourAnalysis {
 				
 			//maxDiff(colourRange.max, hsvColour) < 40 && maxDiff(colourRange.min, hsvColour) < 40
 
-				//if(thresh == 5) printMarker(Point((int) point.x,(int) point.y), drawing, 1);
+				printMarker(Point((int) point.x,(int) point.y), drawing, 1);
 				colourRange.max = maxHSV(colourRange.max, hsvColour);
 				colourRange.min = minHSV(colourRange.min, hsvColour);
 
@@ -156,6 +169,10 @@ class ColourAnalysis {
 		int maxSaturation = max(colour1[1], colour2[1]);
 		int maxValue = max(colour1[2], colour2[2]);
 		return Vec3b(maxHue, maxSaturation, maxValue); 
+	}
+
+	int toGrey(Vec3b bgr) {
+		return (bgr[0] + bgr[1] + bgr[2]) / 3;
 	}
 
 	int maxDiff( Vec3b vec1, Vec3b vec2 ) {
@@ -181,11 +198,11 @@ class ColourAnalysis {
 		marker.clear();
 
 		for(int x = -size; x < size; x++) {	
-			if(point.x+x < 0 || point.x+x > FCOLS) continue;
+			if(point.x+x < 0 || point.x+x > COLS) continue;
 			marker.push_back(Point(point.x+x, point.y));
 		}
 		for(int y = -size; y < size; y++) {	
-			if(point.y+y < 0 || point.y+y > FROWS) continue;
+			if(point.y+y < 0 || point.y+y > ROWS) continue;
 			marker.push_back(Point(point.x, point.y+y));
 		}
 		drawing.push_back(marker);
@@ -202,7 +219,8 @@ class DetermineChessPieces {
 	MinMaxHSV squareColour[2];
 	char chessBoard[OVERSIZED_BOARD][OVERSIZED_BOARD] = {};
 
-	ContourMap contourMap[FCOLS][FROWS];
+	ContourMap contourMap[FROWS][FCOLS];
+
 	vector<vector<Point> > contours;
 	vector<vector<Point> > drawing;
 	vector<Vec4i> hierarchy;
@@ -217,28 +235,68 @@ class DetermineChessPieces {
 			vector<Square>& _localSquareList,
 			vector<Square>& _globalSquareList
 			) {
-
 		drawing.clear();
 		drawing = _drawing;
 
 		hierarchy = _hierarchy;
 
-		//contourMap[FCOLS][FROWS] = {};
-		for(int i = 0; i < FCOLS; i++) {
-			for(int j = 0; j < FROWS; j++) {
+		//contourMap[COLS][ROWS] = {};
+		/*for(int i = 0; i < COLS; i++) {
+			for(int j = 0; j < ROWS; j++) {
 				contourMap[i][j].active = false;
 			}
-		}
+		}*/
+
+		bool found = false;
+		int contourNo = 0;
 		contours.clear();
 		contours = _contours;
 		for (int i = 0; i < OVERSIZED_BOARD; i++) for(int j = 0; j < OVERSIZED_BOARD; j++) chessBoard[i][j] = 0;
 		for (size_t i = 0; i < contours.size(); i++) {
-			for(size_t j = 0; j < contours[i].size(); j++) {
-				contourMap[contours[i][j].x][contours[i][j].y].active = true;
+			bool skip = false;
+			for (size_t j = 0; j < contours[i].size(); j++) {
+				if(skip) {
+					skip = false;
+					break;
+				}
+				for (int l = 0; l < _localSquareList.size(); l++) {
+					if(found) break;
+					Square square = _localSquareList[l];
+					FPoint manualCenter = rotatePoint(_localSquareList[l].center, -square.rotation);
+
+					int centerX = (int) manualCenter.x;
+					int centerY = (int) manualCenter.y;
+					int spacing = (int) square.spacing;
+
+					int spacingOffset = (int)4*spacing/8;
+					int lowerY = centerY - spacingOffset;
+					int upperY = centerY + spacingOffset;
+					int lowerX = centerX - spacingOffset;
+					int upperX = centerX + spacingOffset;
+								
+					printMarker(Point(manualCenter.x, manualCenter.y), drawing, 2);
+					if(l == 25) {
+						if(contours[i][j].x > lowerX && contours[i][j].x < upperX) {
+							if(contours[i][j].y > lowerY && contours[i][j].y < upperY) {
+								if(contourNo == 10) {
+									vector<vector<Point> > smallContours = shrinkContour(contours[i], 1, (int) (centerX -  spacing/2), (int)(centerY - spacing/2));
+									drawContours( _lastFrame, smallContours, 0, Scalar( 0, 0, 255 ), 2, 8, _hierarchy, 0, Point() );
+								}
+								contourNo++;
+								skip = true;
+								break;
+							}
+						}
+					}
+				}
+				//printf("X: %d Y: %d\n", contours[i][j].x, contours[i][j].y);
+				/*contourMap[contours[i][j].x][contours[i][j].y].active = true;
 				contourMap[contours[i][j].x][contours[i][j].y].contour = i;
-				contourMap[contours[i][j].x][contours[i][j].y].contourSubIndex = j;
+				contourMap[contours[i][j].x][contours[i][j].y].contourSubIndex = j;*/
 			}
 		}
+		printf("FINISHED: %d\n", contourNo);
+		return;
 		for (int i = 0; i < _globalSquareList.size(); i++) {
 			if(_globalSquareList[i].occupied) {
 				int x = _globalSquareList[i].x;
@@ -247,8 +305,18 @@ class DetermineChessPieces {
 			}
 		}
 		int count = 0;
+		printf("Square coloru analysis\n");
 		ColourAnalysis squareColourAnalysis(_lastFrame);
-
+		for (int i = 0; i < _localSquareList.size(); i++) {
+			Square square = _localSquareList[i];
+			if(i == 25) {
+				printf("Square rotation: %f\n", square.rotation);
+				bool init = true;
+				//MinMaxHSV result = squareColourAnalysis.squareColourAnalysis(square, (square.x + square.y) % 2, init, drawing);
+			}
+		}
+		_drawing = drawing;
+		return;
 		bool firstBlack = false, firstWhite = false;
 		for (int i = 0; i < _localSquareList.size(); i++) {
 			//Square square = rotateSquare(_localSquareList[i], {.rotation = -square.rotation});
@@ -341,16 +409,30 @@ class DetermineChessPieces {
 	}	
 
 	private:
+	vector<vector<Point> > shrinkContour(vector<Point> &contour, int scaleDown, int transformX, int transformY) {
+		printf("\nSHRINK: %d %d ",  transformX, transformY);
+		for(int i = 0; i < contour.size(); i++) {
+			contour[i].x -= transformX;
+			contour[i].y -= transformY;
+			contour[i].x /= scaleDown;
+			contour[i].y /= scaleDown;
+			printf("| %d %d |", contour[i].x, contour[i].y);
+		}
+		vector<vector<Point> > smallContours;
+		smallContours.push_back(contour);
+		return smallContours;
+	}	
+
 	void printMarker(Point point, vector<vector<Point> >& drawing, int size) {
 		vector<Point> marker;
 		marker.clear();
 
 		for(int x = -size; x < size; x++) {	
-			if(point.x+x < 0 || point.x+x > FCOLS) continue;
+			if(point.x+x < 0 || point.x+x > COLS) continue;
 			marker.push_back(Point(point.x+x, point.y));
 		}
 		for(int y = -size; y < size; y++) {	
-			if(point.y+y < 0 || point.y+y > FROWS) continue;
+			if(point.y+y < 0 || point.y+y > ROWS) continue;
 			marker.push_back(Point(point.x, point.y+y));
 		}
 		drawing.push_back(marker);

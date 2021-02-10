@@ -54,8 +54,9 @@ class StreamProcessing {
 	}
 
 	Mat evaluateContours(float scale, vector<vector<Point> > &_contours) {
+		printf("EVALUATE CONTOURS\n");
 		Mat dst, detected_edges;
-		int lowThreshold = 20;
+		int lowThreshold = 15;
 		//const int max_lowThreshold = 100;
 		const int ratio = 3;
 		const int kernel_size = 3;
@@ -71,18 +72,37 @@ class StreamProcessing {
 		imwrite(fileName2, lastFrame);
 
 		//bool useLaplacianSharpening = false;
-
-		bilateralFilter(lastFrame, detected_edges, 5, 30, 30);
-		GaussianBlur( detected_edges, detected_edges, Size(3,3), 0 );
-
-		/*Mat channels[3];
+		//GaussianBlur( lastFrame, detected_edges, Size(3,3), 0 );
+		fastNlMeansDenoisingColored(lastFrame, detected_edges, 10, 10, 7, 21);
+		//bilateralFilter(lastFrame, detected_edges, 9, 30, 30);
+		Mat channels[3];
 		Mat hsv;
 		cvtColor(lastFrame, hsv, COLOR_BGR2HSV);
 		split(hsv, channels);
-		Mat processed = channels[0];
-		inRange(processed, Scalar(105), Scalar(254), processed);
-		imshow("Processed", processed);
-		waitKey(0);*/
+		Mat processed;
+		processed = channels[1];
+		//inRange(processed, Scalar(5), Scalar(22), processed);
+
+		//Black max: [26, 34, 243]
+		//Black min: [9, 15, 194]
+		//HSV
+		//Black max: [21, 49, 253]
+		//Black min: [14, 36, 221]
+		//
+		//BGR
+		//Black max: [211, 235, 253]
+		//Black min: [180, 207, 221]
+		//
+		//Black max: [255, 255, 255]
+		//Black min: [235, 237, 237]
+		//Black max: [227, 237, 243]
+		//Black min: [174, 184, 194]
+		//
+
+		//inRange(hsv, Scalar(0), Scalar(40), processed);
+		//inRange(lastFrame, Scalar(173, 183, 193), Scalar(228, 238, 244), processed);
+		//imshow("Processed", processed);
+		//waitKey(0);
 
 		//detected_edges = channels[0];
 		//imshow("Curr: ", detected_edges);
@@ -94,7 +114,9 @@ class StreamProcessing {
 		//threshold(detected_edges, detected_edges, 100, 255, THRESH_BINARY);
 		//resize(detected_edges, detected_edges, Size(), 0.5, 0.5);
 		//resize(detected_edges, detected_edges, Size(), 2.0, 2.0);
-
+		//
+		//imshow("Canny vision", detected_edges);
+		//waitKey(0);
 
 		Canny( detected_edges, detected_edges, lowThreshold, lowThreshold*ratio, kernel_size );
 		_contours.clear();
@@ -121,7 +143,9 @@ class StreamProcessing {
 
 			for( int i = 0; i < _contours.size(); i++) {
 				Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-				drawContours( lastFrame, _contours, i, color, 2, 8, hierarchy, 0, Point() );
+				if(hierarchy[i][2] != -1 || true) {
+					drawContours( lastFrame, _contours, i, color, 2, 8, hierarchy, 0, Point() );
+				}
 			}
 		}
 		return detected_edges;
@@ -174,7 +198,7 @@ class StreamProcessing {
 					robotPosition
 			);
 
-			if(false) {
+			if(true) {
 				char fileName[42];
 				sprintf(fileName, "training/targets/target-%d.jpg", frameReference);
 				imwrite(fileName, detectedSquares);
@@ -191,11 +215,11 @@ class StreamProcessing {
 					globalSquareList
 				);
 
-				robotPosition = traverseChessboard(robotPosition);
+				/*robotPosition = traverseChessboard(robotPosition);
 				MinMaxHSV blackSquare = determineChessPieces.getSquareColour(0);
 				MinMaxHSV whiteSquare = determineChessPieces.getSquareColour(1);
 
-				cout << "Black square: " << blackSquare.min << " " << blackSquare.max << " White square: " << whiteSquare.min << " " << whiteSquare.max << endl;
+				cout << "Black square: " << blackSquare.min << " " << blackSquare.max << " White square: " << whiteSquare.min << " " << whiteSquare.max << endl;*/
 
 				/*printf("Unordered map size: %ld\n", blackSquare.hist.size());
 
@@ -678,6 +702,7 @@ class StreamProcessing {
 				if(!CALIBRATE) {
 					Mat display_mat;
 					resize(lastFrame, display_mat, Size(), 0.9, 0.9);
+					//cvtColor(display_mat, display_mat, COLOR_BGR2HSV);
 					imshow (window_name, display_mat);
 				}
 				waitKey(0);

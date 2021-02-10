@@ -312,7 +312,7 @@ class DetermineChessBoard {
 				}
 			}
 
-			printSquare(squareList[i], _lastFrame);
+			//printSquare(squareList[i], _lastFrame);
 			lastSquareIndex = i;
 			insertSquare(&localSquareMap, posX, posY, squareList[i], { .spacing = 0, .rotation = -squareList[i].rotation, .north = 0, .west = 0 }, Point(0,0), _lastFrame, true);
 			count++;
