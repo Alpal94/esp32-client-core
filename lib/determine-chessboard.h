@@ -574,6 +574,8 @@ class DetermineChessBoard {
 
 		Square origin = (*_squareMap)[OVERSIZED_BOARD/2][OVERSIZED_BOARD/2];
 		Square tSquare = translateSquare(rotateSquare(square, offset), offset);
+
+		printSquare(rotateSquare(tSquare, {.rotation = square.rotation}), _lastFrame);
 		//if(debug) printf("OFFSET: spacing: %f rotation: %f north: %f west: %f\n", offset.spacing, offset.rotation, offset.north, offset.west);
 		if(debug) printf("ORIGIN: occupied: %d spacing: %f posx: %d posy: %d\n", origin.occupied, origin.spacing, origin.x, origin.y);
 		if(origin.occupied) {
@@ -596,7 +598,6 @@ class DetermineChessBoard {
 				(*_squareMap)[posX][posY] = tSquare;
 				if(debug) {
 //					if(posX == 16 && posY == 13 || posX == 15 && posY == 12 || posX == 15 && posY == 11) {
-					//printSquare(tSquare, _lastFrame);
 				}
 			} else {
 				if(posX > 10 && posY < 12) {

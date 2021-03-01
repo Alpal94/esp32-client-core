@@ -229,6 +229,7 @@ class DetermineChessPieces {
 	void findChessPieces(
 			Mat& _gray_lastFrame,
 			Mat& _lastFrame,
+			Mat& _detectedEdges,
 			vector<vector<Point> >& _contours,
 			vector<Vec4i> _hierarchy,
 			vector<vector<Point> >& _drawing,
@@ -246,13 +247,13 @@ class DetermineChessPieces {
 				contourMap[i][j].active = false;
 			}
 		}*/
-
+		filterChessPieceEdges(_detectedEdges, _localSquareList);
 		bool found = false;
 		int contourNo = 0;
 		contours.clear();
 		contours = _contours;
 		for (int i = 0; i < OVERSIZED_BOARD; i++) for(int j = 0; j < OVERSIZED_BOARD; j++) chessBoard[i][j] = 0;
-		for (size_t i = 0; i < contours.size(); i++) {
+		/*for (size_t i = 0; i < contours.size(); i++) {
 			bool skip = false;
 			for (size_t j = 0; j < contours[i].size(); j++) {
 				if(skip) {
@@ -280,7 +281,30 @@ class DetermineChessPieces {
 							if(contours[i][j].y > lowerY && contours[i][j].y < upperY) {
 								if(contourNo == 10) {
 									vector<vector<Point> > smallContours = shrinkContour(contours[i], 1, (int) (centerX -  spacing/2), (int)(centerY - spacing/2));
-									drawContours( _lastFrame, smallContours, 0, Scalar( 0, 0, 255 ), 2, 8, _hierarchy, 0, Point() );
+									int tSize  = (int) spacing * 1.5 ;
+									Mat3b _template(tSize, tSize * 0.5);
+									Mat3b _black(tSize, tSize * 0.5);
+									_black.setTo(Scalar(0,0,0));
+									drawContours( _template, smallContours, 0, Scalar( 255, 255, 255 ), 2, 8, _hierarchy, 0, Point() );
+									drawContours( _black, smallContours, 0, Scalar( 255, 255, 255 ), 2, 8, _hierarchy, 0, Point() );
+
+									Mat3b _canny(ROWS, COLS);
+									Mat3b dst, mask;
+									dst.create(ROWS, COLS);
+									mask.create(ROWS, COLS);
+									for( int v = 0; v < _contours.size(); v++) {
+										drawContours( _canny, contours, v, Scalar( 255, 255, 255 ), 2, 8, _hierarchy, 0, Point() );
+									}
+									//matchTemplate(_canny, _template, dst, TM_CCORR_NORMED, mask);
+									//let result = minMaxLoc(dst, mask);
+
+									imwrite("template.jpg", _template);
+									imwrite("source.jpg", _canny);
+									imwrite("mask4.jpg", _black);
+									//imshow("dst", dst);
+									imshow("Mask", _canny);
+									waitKey(0);
+
 								}
 								contourNo++;
 								skip = true;
@@ -290,11 +314,8 @@ class DetermineChessPieces {
 					}
 				}
 				//printf("X: %d Y: %d\n", contours[i][j].x, contours[i][j].y);
-				/*contourMap[contours[i][j].x][contours[i][j].y].active = true;
-				contourMap[contours[i][j].x][contours[i][j].y].contour = i;
-				contourMap[contours[i][j].x][contours[i][j].y].contourSubIndex = j;*/
 			}
-		}
+		}*/
 		printf("FINISHED: %d\n", contourNo);
 		return;
 		for (int i = 0; i < _globalSquareList.size(); i++) {
@@ -409,7 +430,43 @@ class DetermineChessPieces {
 	}	
 
 	private:
-	vector<vector<Point> > shrinkContour(vector<Point> &contour, int scaleDown, int transformX, int transformY) {
+	void filterChessPieceEdges(Mat& edges, vector<Square>& _localSquareList) {
+
+
+		vector<vector<Point> > pieceContours;
+		vector<Vec4i> pieceHierarchy;
+		findContours( edges, pieceContours, pieceHierarchy, RETR_TREE, CHAIN_APPROX_NONE);
+		for( int i = 0; i < pieceContours.size(); i++) {
+			if(pieceContours[i].size() > 10) {
+				drawContours( edges, pieceContours, i, Scalar(255), 1, 8, pieceHierarchy, 1, Point() );
+			}
+		}
+
+		for(int i = 0; i < _localSquareList.size(); i++) {
+			Square square = _localSquareList[i];
+			printSquare(rotateSquare(square, { .rotation = square.rotation }), edges, Scalar(255));
+		}
+		/*vector<Vec4i> lines;
+		HoughLinesP(edges, lines, 1, 0.5 * CV_PI/180, 80, 10, 5);
+		for( size_t i = 0; i < lines.size(); i++) {
+			Point pt1 = Point(lines[i][0], lines[i][1]);
+			Point pt2 = Point(lines[i][2], lines[i][3]);
+			line( edges, pt1, pt2, Scalar(100), 2, LINE_AA);
+		}*/
+		/*vector<Vec3f> circles;
+		HoughCircles(edges, circles, HOUGH_GRADIENT, 30, 1, 30, 10, 1, 30);
+		for( size_t i = 0; i < circles.size(); i++) {
+			Vec3i c = circles[i];
+			Point center = Point(c[0], c[1]);
+
+			int radius = c[2];
+			circle( edges, center, radius, Scalar(100), 3, LINE_AA );
+		}*/
+		/*imshow("DETECTED EDGES: ", edges);
+		waitKey(0);*/
+	}
+
+	vector<vector<Point> > shrinkContour(vector<Point> contour, int scaleDown, int transformX, int transformY) {
 		printf("\nSHRINK: %d %d ",  transformX, transformY);
 		for(int i = 0; i < contour.size(); i++) {
 			contour[i].x -= transformX;
@@ -436,6 +493,27 @@ class DetermineChessPieces {
 			marker.push_back(Point(point.x, point.y+y));
 		}
 		drawing.push_back(marker);
+	}
+	void printSquare(Square _square, Mat &_display, Scalar colour) {
+		line( _display,
+				Point(_square.northEast.x, _square.northEast.y),
+				Point(_square.northWest.x, _square.northWest.y),
+				colour, 3, 3);
+
+		line( _display,
+				Point(_square.southEast.x, _square.southEast.y),
+				Point(_square.southWest.x, _square.southWest.y),
+				colour, 3, 3);
+
+		line( _display,
+				Point(_square.southWest.x, _square.southWest.y),
+				Point(_square.northWest.x, _square.northWest.y),
+				colour, 3, 3);
+
+		line( _display,
+				Point(_square.southEast.x, _square.southEast.y),
+				Point(_square.northEast.x, _square.northEast.y),
+				colour, 3, 3);
 	}
 	bool evaluateChessPiece(size_t contourIndex, size_t contourSubIndex, FPoint center, Mat &lastFrame) {
 		int count = 0;

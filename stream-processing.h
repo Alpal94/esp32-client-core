@@ -5,7 +5,7 @@
 #include "lib/hsv-experiment.h"
 
 #define PRINT_LINES false
-#define PRINT_HOUGH_LINES false
+#define PRINT_HOUGH_LINES true
 #define NEW_LINE_POINTS false
 #define PRINT_CONTOURS false
 #define HSV_EXPERIMENT false
@@ -73,8 +73,27 @@ class StreamProcessing {
 
 		//bool useLaplacianSharpening = false;
 		//GaussianBlur( lastFrame, detected_edges, Size(3,3), 0 );
-		fastNlMeansDenoisingColored(lastFrame, detected_edges, 10, 10, 7, 21);
-		//bilateralFilter(lastFrame, detected_edges, 9, 30, 30);
+		//fastNlMeansDenoisingColored(lastFrame, detected_edges, 10, 10, 7, 21);
+		bilateralFilter(lastFrame, detected_edges, 9, 30, 30);
+		Mat grey;
+		cvtColor(detected_edges, grey, COLOR_BGR2GRAY);
+
+
+		Mat grad;
+		Mat grad_x, grad_y;
+		Mat abs_grad_x, abs_grad_y;
+
+		int ksize = 3, ddepth = CV_64F;
+		double sscale = 2, delta = 0;
+		Sobel(grey, grad_x, ddepth, 1, 0, ksize, sscale, delta, BORDER_DEFAULT);
+		Sobel(grey, grad_y, ddepth, 0, 1, ksize, sscale, delta, BORDER_DEFAULT);
+		convertScaleAbs(grad_x, abs_grad_x);
+		convertScaleAbs(grad_y, abs_grad_y);
+		addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
+		GaussianBlur( grad, grad, Size(5,5), 0 );
+		//imshow("GREY", grey);
+		//imshow("SOBEL", grad);
+
 		Mat channels[3];
 		Mat hsv;
 		cvtColor(lastFrame, hsv, COLOR_BGR2HSV);
@@ -101,24 +120,31 @@ class StreamProcessing {
 
 		//inRange(hsv, Scalar(0), Scalar(40), processed);
 		//inRange(lastFrame, Scalar(173, 183, 193), Scalar(228, 238, 244), processed);
-		//imshow("Processed", processed);
 		//waitKey(0);
 
 		//detected_edges = channels[0];
-		//imshow("Curr: ", detected_edges);
 		//waitKey(0);
 		cvtColor( detected_edges, detected_edges, COLOR_BGR2GRAY );
 		//adaptiveThreshold(detected_edges, detected_edges, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 3, 0);
 
 		//blur( detected_edges, detected_edges, Size(3,3) );
-		//threshold(detected_edges, detected_edges, 100, 255, THRESH_BINARY);
 		//resize(detected_edges, detected_edges, Size(), 0.5, 0.5);
 		//resize(detected_edges, detected_edges, Size(), 2.0, 2.0);
 		//
-		//imshow("Canny vision", detected_edges);
-		//waitKey(0);
+		//
+		//
 
 		Canny( detected_edges, detected_edges, lowThreshold, lowThreshold*ratio, kernel_size );
+		/*vector<Vec3f> circles;
+		HoughCircles(grad, circles, HOUGH_GRADIENT, 1, 10, 1000, 22, 10, 30);
+		for( size_t i = 0; i < circles.size(); i++) {
+			Vec3i c = circles[i];
+			Point center = Point(c[0], c[1]);
+
+			int radius = c[2];
+			circle( grad, center, radius, Scalar(255), 3, LINE_AA );
+		}
+		waitKey(0);*/
 		_contours.clear();
 		//CHAIN_APPROX_NONE
 		findContours( detected_edges, _contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
@@ -131,14 +157,13 @@ class StreamProcessing {
 					drawContours( detected_edges, _contours, i, 255, 1);
 				}
 			}
-			imshow("Canny", detected_edges);
 		}
 		char fileName[42];
 		sprintf(fileName, "training/samples/sample-%d.jpg", frameReference);
 		imwrite(fileName, detected_edges);
 
 		Mat drawing;
-		RNG rng(12345);
+		RNG rng(100);
 		if(PRINT_CONTOURS) {
 
 			for( int i = 0; i < _contours.size(); i++) {
@@ -148,6 +173,9 @@ class StreamProcessing {
 				}
 			}
 		}
+
+		imshow("Detected", detected_edges);
+		waitKey(0);
 		return detected_edges;
 
 	}
@@ -183,7 +211,7 @@ class StreamProcessing {
 		auto startDetermineLines = std::chrono::high_resolution_clock::now();
 		vector<LineMetadata> mergedLines = determineLines(detected_edges, squares);
 		timer(startDetermineLines, (char*) "DetermineLines");
-		if(true) {
+		if(false) {
 
 			Mat detectedSquares;
 			lastFrame.copyTo(detectedSquares);
@@ -208,6 +236,7 @@ class StreamProcessing {
 				determineChessPieces.findChessPieces(
 					gray_lastFrame,
 					lastFrame,
+					detected_edges,
 					contours,
 					hierarchy,
 					squares,
@@ -392,6 +421,17 @@ class StreamProcessing {
 				lines.push_back(data);
 			}
 		}
+
+		/*vector<Vec3f> circles;
+		HoughCircles(edges, circles, HOUGH_GRADIENT, 1, 50, 50, 20, 1, 30);
+		for( size_t i = 0; i < circles.size(); i++) {
+			Vec3i c = circles[i];
+			Point center = Point(c[0], c[1]);
+
+			int radius = c[2];
+			circle( lastFrame, center, radius, Scalar(255, 0, 255), 3, LINE_AA );
+		}*/
+
 		long long averageTime = 0;
 		auto contourTime = std::chrono::high_resolution_clock::now();
 
