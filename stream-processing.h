@@ -73,11 +73,10 @@ class StreamProcessing {
 
 		//bool useLaplacianSharpening = false;
 		//GaussianBlur( lastFrame, detected_edges, Size(3,3), 0 );
-		//fastNlMeansDenoisingColored(lastFrame, detected_edges, 10, 10, 7, 21);
-		bilateralFilter(lastFrame, detected_edges, 9, 30, 30);
+		fastNlMeansDenoisingColored(lastFrame, detected_edges, 10, 10, 7, 21);
+	//	bilateralFilter(lastFrame, detected_edges, 9, 30, 30);
 		Mat grey;
 		cvtColor(detected_edges, grey, COLOR_BGR2GRAY);
-
 
 		Mat grad;
 		Mat grad_x, grad_y;
@@ -134,7 +133,13 @@ class StreamProcessing {
 		//
 		//
 
+		Mat tmp;
 		Canny( detected_edges, detected_edges, lowThreshold, lowThreshold*ratio, kernel_size );
+		Canny( grad, tmp, lowThreshold, lowThreshold*ratio, kernel_size );
+		/*imshow("CANNY1", detected_edges);
+		imshow("CANNY2", tmp);
+		imshow("SOBEL", grad);
+		waitKey(0);*/
 		/*vector<Vec3f> circles;
 		HoughCircles(grad, circles, HOUGH_GRADIENT, 1, 10, 1000, 22, 10, 30);
 		for( size_t i = 0; i < circles.size(); i++) {
@@ -174,8 +179,6 @@ class StreamProcessing {
 			}
 		}
 
-		imshow("Detected", detected_edges);
-		waitKey(0);
 		return detected_edges;
 
 	}
@@ -211,7 +214,7 @@ class StreamProcessing {
 		auto startDetermineLines = std::chrono::high_resolution_clock::now();
 		vector<LineMetadata> mergedLines = determineLines(detected_edges, squares);
 		timer(startDetermineLines, (char*) "DetermineLines");
-		if(false) {
+		if(true) {
 
 			Mat detectedSquares;
 			lastFrame.copyTo(detectedSquares);
@@ -305,7 +308,7 @@ class StreamProcessing {
 		}
 		//bitwise_or(black, white, lastFrame);
 		//lastFrame = next;
-		if(!HSV_EXPERIMENT) drawSquares(lastFrame, squares, gray_lastFrame.rows, gray_lastFrame.cols);
+		drawSquares(lastFrame, squares, gray_lastFrame.rows, gray_lastFrame.cols);
 		//resize(lastFrame, lastFrame, Size(), 0.5 / scale, 0.5 / scale);
 		//resize(detected_edges, detected_edges, Size(), 0.5 / scale, 0.5 / scale);
 
@@ -640,15 +643,17 @@ class StreamProcessing {
 	}
 
 	static void drawSquares( Mat& image, const vector<vector<Point> >& squares, int rows, int cols) {
+		printf("DRAW SQUARES PRINTING\n");
 		srand (0);
 		for (size_t i = 0; i < squares.size(); i++) {
+			printf("PRINTING SQUARES\n");
 			//const Point* p = &squares[i][0];
 		//	int n = (int) squares[i].size();
 
 			//Scalar color = Scalar(rand() % 255, rand() % 255, rand() % 255);
 			Vec3b colour(rand() % 255, rand() % 255, rand() % 255);
 			for(size_t j = 0; j < squares[i].size(); j++) {
-				//circle(image, squares[i][j], 1, color, 1, LINE_4, 0);
+				circle(image, squares[i][j], 1, colour, 1, LINE_4, 0);
 				size_t x = squares[i][j].x;
 				size_t y = squares[i][j].y;
 				if(x < cols && y < rows) {

@@ -247,7 +247,9 @@ class DetermineChessPieces {
 				contourMap[i][j].active = false;
 			}
 		}*/
-		filterChessPieceEdges(_detectedEdges, _localSquareList);
+		printMarker(Point(300, 300), drawing, 90);
+		vector<vector<Point> > filtered = filterChessPieceEdges(_detectedEdges, _localSquareList, _lastFrame);
+
 		bool found = false;
 		int contourNo = 0;
 		contours.clear();
@@ -430,28 +432,26 @@ class DetermineChessPieces {
 	}	
 
 	private:
-	void filterChessPieceEdges(Mat& edges, vector<Square>& _localSquareList) {
+	vector<vector<Point> > filterChessPieceEdges(Mat& edges, vector<Square>& _localSquareList, Mat& frame) {
 
-
-		vector<vector<Point> > pieceContours;
-		vector<Vec4i> pieceHierarchy;
-		findContours( edges, pieceContours, pieceHierarchy, RETR_TREE, CHAIN_APPROX_NONE);
-		for( int i = 0; i < pieceContours.size(); i++) {
-			if(pieceContours[i].size() > 10) {
-				drawContours( edges, pieceContours, i, Scalar(255), 1, 8, pieceHierarchy, 1, Point() );
-			}
-		}
 
 		for(int i = 0; i < _localSquareList.size(); i++) {
 			Square square = _localSquareList[i];
-			printSquare(rotateSquare(square, { .rotation = square.rotation }), edges, Scalar(255));
+			printSquare(rotateSquare(square, { .rotation = square.rotation }), edges, Scalar(0));
 		}
-		/*vector<Vec4i> lines;
-		HoughLinesP(edges, lines, 1, 0.5 * CV_PI/180, 80, 10, 5);
+		vector<Vec4i> lines;
+		HoughLinesP(edges, lines, 1, 2 * CV_PI/180, 30, 20, 5);
 		for( size_t i = 0; i < lines.size(); i++) {
 			Point pt1 = Point(lines[i][0], lines[i][1]);
 			Point pt2 = Point(lines[i][2], lines[i][3]);
-			line( edges, pt1, pt2, Scalar(100), 2, LINE_AA);
+			line( edges, pt1, pt2, Scalar(0), 10, LINE_AA);
+		}
+		/*lines.clear();
+		HoughLinesP(edges, lines, 1, 2 * CV_PI/180, 30, 20, 5);
+		for( size_t i = 0; i < lines.size(); i++) {
+			Point pt1 = Point(lines[i][0], lines[i][1]);
+			Point pt2 = Point(lines[i][2], lines[i][3]);
+			line( edges, pt1, pt2, Scalar(0), 3, LINE_AA);
 		}*/
 		/*vector<Vec3f> circles;
 		HoughCircles(edges, circles, HOUGH_GRADIENT, 30, 1, 30, 10, 1, 30);
@@ -462,8 +462,30 @@ class DetermineChessPieces {
 			int radius = c[2];
 			circle( edges, center, radius, Scalar(100), 3, LINE_AA );
 		}*/
-		/*imshow("DETECTED EDGES: ", edges);
-		waitKey(0);*/
+		vector<vector<Point> > contours;
+		vector<Vec4i> hierarchy;
+		findContours( edges, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+		for( int i = 0; i < contours.size(); i++) {
+			drawContours( edges, contours, i, Scalar(255), 4, 8);
+		}
+		vector<vector<Point> > pieceContours;
+		vector<Vec4i> pieceHierarchy;
+		findContours( edges, pieceContours, pieceHierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+		vector<vector<Point> > pieceHulls(pieceContours.size());
+		for( int i = 0; i < pieceContours.size(); i++) {
+			convexHull(pieceContours[i], pieceHulls[i]); 
+			Moments m = moments(pieceHulls[i]);
+			if(m.m00 > 200) {
+				Point center = Point(int(m.m10 / m.m00), int(m.m01 / m.m00));
+				circle(frame, center, 10, Scalar(255, 255, 255), 3, LINE_4, 0);
+				drawContours( edges, pieceHulls, i, Scalar(100), 3, 8);
+			}
+		}
+
+
+		imshow("DETECTED EDGES: ", edges);
+		waitKey(0);
+		return pieceContours;
 	}
 
 	vector<vector<Point> > shrinkContour(vector<Point> contour, int scaleDown, int transformX, int transformY) {
