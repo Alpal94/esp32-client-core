@@ -439,6 +439,7 @@ class DetermineChessPieces {
 			Square square = _localSquareList[i];
 			printSquare(rotateSquare(square, { .rotation = square.rotation }), edges, Scalar(0));
 		}
+
 		vector<Vec4i> lines;
 		HoughLinesP(edges, lines, 1, 2 * CV_PI/180, 30, 20, 5);
 		for( size_t i = 0; i < lines.size(); i++) {
@@ -476,25 +477,47 @@ class DetermineChessPieces {
 			convexHull(pieceContours[i], pieceHulls[i]); 
 			Moments m = moments(pieceHulls[i]);
 			if(m.m00 > 200) {
+				bool isPiece = false;
 				Point center = Point(int(m.m10 / m.m00), int(m.m01 / m.m00));
-				circle(frame, center, 10, Scalar(255, 255, 255), 3, LINE_4, 0);
-				drawContours( edges, pieceHulls, i, Scalar(100), 3, 8);
+				for(int i = 0; i < _localSquareList.size(); i++) {
+					float shift = -_localSquareList[i].spacing / 5 ;
+					Square shrinkSquare = _localSquareList[i];
+					shrinkSquare.northEast = shiftPoint(shrinkSquare.northEast, shift, shift);
+					shrinkSquare.northWest = shiftPoint(shrinkSquare.northWest, -shift, shift);
+					shrinkSquare.southWest = shiftPoint(shrinkSquare.southWest, -shift, -shift);
+					shrinkSquare.southEast = shiftPoint(shrinkSquare.southEast, shift, -shift);
+					shrinkSquare = rotateSquare(shrinkSquare, { .rotation = shrinkSquare.rotation });
+
+					vector<Point> bounds;
+					bounds.push_back(fPointToPoint(shrinkSquare.northEast));
+					bounds.push_back(fPointToPoint(shrinkSquare.northWest));
+					bounds.push_back(fPointToPoint(shrinkSquare.southWest));
+					bounds.push_back(fPointToPoint(shrinkSquare.southEast));
+					bounds.push_back(fPointToPoint(shrinkSquare.northEast));
+					if(pointPolygonTest(bounds, center, false) > 0) {
+						isPiece = true;
+					}
+				}
+				if(isPiece) {
+					circle(frame, center, 10, Scalar(255, 255, 255), 3, LINE_4, 0);
+					drawContours( edges, pieceHulls, i, Scalar(100), 3, 8);
+				}
 			}
 		}
 
 
-		imshow("DETECTED EDGES: ", edges);
-		waitKey(0);
+		//imshow("DETECTED EDGES: ", edges);
+		//waitKey(0);
 		return pieceContours;
 	}
 
-	vector<vector<Point> > shrinkContour(vector<Point> contour, int scaleDown, int transformX, int transformY) {
+	vector<vector<Point> > shrinkContour(vector<Point> contour, float scaleDown, int transformX, int transformY) {
 		printf("\nSHRINK: %d %d ",  transformX, transformY);
 		for(int i = 0; i < contour.size(); i++) {
 			contour[i].x -= transformX;
 			contour[i].y -= transformY;
-			contour[i].x /= scaleDown;
-			contour[i].y /= scaleDown;
+			contour[i].x = (int) contour[i].x * scaleDown;
+			contour[i].y = (int) contour[i].y * scaleDown;
 			printf("| %d %d |", contour[i].x, contour[i].y);
 		}
 		vector<vector<Point> > smallContours;

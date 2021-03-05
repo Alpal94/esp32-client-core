@@ -565,8 +565,12 @@ class DetermineChessBoard {
 	}
 
 	bool isLineWest(LineMetadata line, LineMetadata comp) {
-		float lineX = -line.intercept / comp.gradient;
-		float compX = -comp.intercept / comp.gradient;
+		float lineX = line.xIntercept;
+		float compX = comp.xIntercept;
+		if(isinf(lineX) || isinf(compX)) {
+			lineX = line.intercept; 
+			compX = comp.intercept;
+		}
 
 		return lineX < compX;
 	}
@@ -575,7 +579,7 @@ class DetermineChessBoard {
 		Square origin = (*_squareMap)[OVERSIZED_BOARD/2][OVERSIZED_BOARD/2];
 		Square tSquare = translateSquare(rotateSquare(square, offset), offset);
 
-		printSquare(rotateSquare(tSquare, {.rotation = square.rotation}), _lastFrame);
+		//printSquare(rotateSquare(tSquare, {.rotation = square.rotation}), _lastFrame);
 		//if(debug) printf("OFFSET: spacing: %f rotation: %f north: %f west: %f\n", offset.spacing, offset.rotation, offset.north, offset.west);
 		if(debug) printf("ORIGIN: occupied: %d spacing: %f posx: %d posy: %d\n", origin.occupied, origin.spacing, origin.x, origin.y);
 		if(origin.occupied) {

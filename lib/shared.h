@@ -135,6 +135,10 @@ Point fPointToPoint(FPoint point) {
 	return Point ((int) point.x, (int) point.y);
 }
 
+FPoint shiftPoint(FPoint point, float x, float y) {
+	return { .x = point.x + x, .y = point.y + y };
+}
+
 double fPixelDist( FPoint pt1, FPoint pt2 )
 {
 	double dx = pt1.x - pt2.x;
