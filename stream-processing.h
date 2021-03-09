@@ -5,7 +5,7 @@
 #include "lib/hsv-experiment.h"
 
 #define PRINT_LINES false
-#define PRINT_HOUGH_LINES true
+#define PRINT_HOUGH_LINES false
 #define NEW_LINE_POINTS false
 #define PRINT_CONTOURS false
 #define HSV_EXPERIMENT false

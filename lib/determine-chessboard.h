@@ -2,7 +2,7 @@
 using namespace cv;
 using namespace std;
 
-#define PARALLEL_ANGLE 0.05
+#define PARALLEL_ANGLE 0.03
 
 class DetermineChessBoard {
 	private:	
@@ -71,26 +71,44 @@ class DetermineChessBoard {
 			//pureCalcLineX(mergedLines[i].xGradient, mergedLines[i].xIntercept, squareIntercepts, _lastFrame);
 			//if(lineVisited[i]) continue;
 			float gradient = mergedLines[i].gradient;
+			float xGradient = mergedLines[i].xGradient;
 			//float intercept = mergedLines[i].intercept;
-			
+			//if(i < 10 * mergedLines.size() / 16 || i > 11 * mergedLines.size() / 16) continue;
+			//26 or 27
+			//if(i != 27)  continue;
+			printf("SIZE: %ld\n", 10 * mergedLines.size() / 16);
+			printf("SIZE: %ld\n", 11 * mergedLines.size() / 16);
+			//printLine(mergedLines[i], _lastFrame, Scalar(255, 255, 0));
 			vector<LineMetadata> parallel_lines;
 			vector<LineMetadata> perpendicular_lines;
 			parallel_lines.clear();
 			perpendicular_lines.clear();
 			for (size_t j = 0; j < mergedLines.size(); j++) {
 				float gradient_next = mergedLines[j].gradient;
+				float xGradient_next = mergedLines[j].xGradient;
 				//float intercept_next = mergedLines[j].intercept;
 				
-				float angle = angleFromGradient(gradient, gradient_next);
-				if(angle < PARALLEL_ANGLE) {
+				float perpendicular_angle, parallel_angle;
+				if(fabs(gradient) > 5) {
+					perpendicular_angle = angleFromGradient(xGradient, gradient_next);
+					parallel_angle = angleFromGradient(xGradient, xGradient_next);
+				} else {
+					perpendicular_angle = angleFromGradient(gradient, xGradient_next);
+					parallel_angle = angleFromGradient(gradient, gradient_next);
+				}
+				printf("DISCOVERED ANGLES: %f %f for %f and %f NEXT: %f, %f\n", perpendicular_angle, parallel_angle, gradient, xGradient, gradient_next, xGradient_next);
+				///1.57
+				if(fabs(perpendicular_angle) < 0.09) {
+					perpendicular_lines.push_back(mergedLines[j]);
+				}
+
+				if(fabs(parallel_angle) < PARALLEL_ANGLE) {
 					parallel_lines.push_back(mergedLines[j]);
 				}
 				///1.57
-				if(angle > 1.41 && angle < 1.69) {
-					perpendicular_lines.push_back(mergedLines[j]);
-				}
+
 			}
-			printf("Parallel lines: %ld\nPerpedicular lines: %ld\nAll lines: %ld\n", parallel_lines.size(), perpendicular_lines.size(), mergedLines.size());
+			printf("Parallel lines: %ld Perpedicular lines: %ld All lines: %ld\n", parallel_lines.size(), perpendicular_lines.size(), mergedLines.size());
 			/*for(int j = 0; j < parallel_lines.size(); j++) {
 				Point x1 = Point(parallel_lines[j].bounds[0], parallel_lines[j].bounds[1]);
 				Point x2 = Point(parallel_lines[j].bounds[2], parallel_lines[j].bounds[3]);
@@ -174,6 +192,13 @@ class DetermineChessBoard {
 								southLine = !isMergedNorth ? mergedLines[i] : squareCandidateParallel[j];
 							}
 
+							if((j == 1 && z == 0)) {
+								//printLine(northLine, _lastFrame, Scalar(0,0,255));
+								//printLine(southLine, _lastFrame, Scalar(0,255,0));
+								//printLine(westLine, _lastFrame, Scalar(255,0,0));
+								//printLine(eastLine, _lastFrame, Scalar(255,255,255));
+							}
+
 							FPoint northEast = locateIntercept(northLine, eastLine);
 							FPoint northWest = locateIntercept(northLine, westLine);
 							FPoint southEast = locateIntercept(southLine, eastLine);
@@ -198,6 +223,7 @@ class DetermineChessBoard {
 							if(!checkSpacingIsSquare(spacingNorth, spacingSouth, spacingWest, spacingEast)) {
 								if(fabs(mergedLines[i].gradient == 0.0) && mergedLines[i].intercept < 300) {
 									printf("Warning: not a square.  Spacing NSWE: %f %f %f %f\n", spacingNorth, spacingSouth, spacingWest, spacingEast);
+
 								}
 								continue;
 							}
@@ -225,29 +251,11 @@ class DetermineChessBoard {
 								.lines = { northLine, eastLine, southLine, westLine }
 								
 							};
-							/*if(fabs(mergedLines[i].gradient == 0.0) && mergedLines[i].intercept < 300 && southLine.gradient == 0 && northLine.gradient == 0) {
-								if(westLine.xIntercept > 800 && westLine.xIntercept < 1100) {
-									pureCalcLine(northLine.gradient, northLine.intercept, _lastFrame);
-									pureCalcLine(southLine.gradient, southLine.intercept, _lastFrame);
-									pureCalcLine(eastLine.gradient, eastLine.intercept, _lastFrame);
-									pureCalcLine(westLine.gradient, westLine.intercept, _lastFrame);
-								}
-									printSquare(square, _lastFrame);
-							}*/
-							//pureCalcLine(mergedLines[i].gradient, mergedLines[i].intercept, squareIntercepts, _lastFrame);
-							//pureCalcLine(squareCandidatePerpendicular[z].gradient, squareCandidatePerpendicular[z].intercept, squareIntercepts, _lastFrame);
-							//pureCalcLine(squareCandidatePerpendicular[z+1].gradient, squareCandidatePerpendicular[z+1].intercept, squareIntercepts, _lastFrame);
-							//pureCalcLine(squareCandidateParallel[j].gradient, squareCandidateParallel[j].intercept, squareIntercepts, _lastFrame);
 							if(noSquares) {
-								//SQUARE COLOUR IS SLOW
+								//SQUARE COLOUR IS SLOW (flood fill)
 								//squareColour(square, _lastFrame, _display);
 								printf("Origin Center: %f %f\n", square.center.x, square.center.y);
 								squareList.push_back(square);
-								//printSquare(square, _lastFrame);
-								//pureCalcLine(mergedLines[i].gradient, mergedLines[i].intercept, squareIntercepts);
-								//pureCalcLine(squareCandidatePerpendicular[z].gradient, squareCandidatePerpendicular[z].intercept, squareIntercepts);
-								//pureCalcLine(squareCandidatePerpendicular[z+1].gradient, squareCandidatePerpendicular[z+1].intercept, squareIntercepts);
-								//pureCalcLine(squareCandidateParallel[j].gradient, squareCandidateParallel[j].intercept, squareIntercepts);
 							}
 							printf("NO Squares: %d\n", noSquares);
 						}
@@ -312,7 +320,7 @@ class DetermineChessBoard {
 				}
 			}
 
-			//printSquare(squareList[i], _lastFrame);
+			printSquare(squareList[i], _lastFrame);
 			lastSquareIndex = i;
 			insertSquare(&localSquareMap, posX, posY, squareList[i], { .spacing = 0, .rotation = -squareList[i].rotation, .north = 0, .west = 0 }, Point(0,0), _lastFrame, true);
 			count++;
@@ -747,6 +755,12 @@ class DetermineChessBoard {
 			marker.push_back(Point(point.x, point.y+y));
 		}
 		drawing.push_back(marker);*/
+	}
+
+	void printLine(LineMetadata _line, Mat& frame, Scalar color) {
+		Point x1 = Point(_line.bounds[0], _line.bounds[1]);
+		Point x2 = Point(_line.bounds[2], _line.bounds[3]);
+		line(frame, x1, x2, color, 3, 3);
 	}
 
 	void printSquare(Square _square, Mat &gray_lastFrame) {
