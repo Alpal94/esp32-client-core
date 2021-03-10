@@ -506,8 +506,8 @@ class DetermineChessPieces {
 		}
 
 
-		//imshow("DETECTED EDGES: ", edges);
-		//waitKey(0);
+		imshow("DETECTED EDGES: ", edges);
+		waitKey(0);
 		return pieceContours;
 	}
 
@@ -543,22 +543,22 @@ class DetermineChessPieces {
 		line( _display,
 				Point(_square.northEast.x, _square.northEast.y),
 				Point(_square.northWest.x, _square.northWest.y),
-				colour, 3, 3);
+				colour, 5, 3);
 
 		line( _display,
 				Point(_square.southEast.x, _square.southEast.y),
 				Point(_square.southWest.x, _square.southWest.y),
-				colour, 3, 3);
+				colour, 5, 3);
 
 		line( _display,
 				Point(_square.southWest.x, _square.southWest.y),
 				Point(_square.northWest.x, _square.northWest.y),
-				colour, 3, 3);
+				colour, 5, 3);
 
 		line( _display,
 				Point(_square.southEast.x, _square.southEast.y),
 				Point(_square.northEast.x, _square.northEast.y),
-				colour, 3, 3);
+				colour, 5, 3);
 	}
 	bool evaluateChessPiece(size_t contourIndex, size_t contourSubIndex, FPoint center, Mat &lastFrame) {
 		int count = 0;
