@@ -81,6 +81,25 @@ struct Square {
 	int global_y;
 };
 
+enum PieceType {
+	King,
+	Queen,
+	Bishop,
+	Knight,
+	Rook,
+	Pawn
+};
+
+enum Colour { 
+	Black,
+	White
+};
+
+struct ChessPiece {
+	PieceType type;
+	Colour colour;
+};
+
 enum Orientation {
 	NE, NW, SE, SW
 };
@@ -101,7 +120,7 @@ struct MinMaxHSV {
 	Vec3b min;
 	Vec3b max;
 	Vec3b average;
-	Vec3b sum;
+	int sum[3];
 	Vec3b comp;
 	unordered_map<string, int> hist;
 };

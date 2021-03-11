@@ -4,6 +4,15 @@ using namespace cv;
 using namespace std;
 #define FROWS 120
 #define FCOLS 160
+
+class Positions {
+	private:
+	int noPieces;
+	ChessPiece board[8][8];
+	int turns;
+
+};
+
 class ColourAnalysis {
 	private:
 	bool seen[COLS][ROWS] = {};
@@ -29,6 +38,19 @@ class ColourAnalysis {
 		floodFill(point, contour, pieceColour, 0, true);
 		_drawing = drawing;
 		return true;
+	}
+
+	MinMaxHSV contourColourAnalysis(Point center, vector<Point>& contour) {
+		count = 0;
+		MinMaxHSV colour;
+		Point2f floatCenter = Point2f((float) center.x, (float) center.y);
+		floodFill(floatCenter, contour, colour, 5, true);
+		if(count) {
+			colour.average[0] = colour.sum[0] / count;
+			colour.average[1] = colour.sum[1] / count;
+			colour.average[2] = colour.sum[2] / count;
+		}
+		return colour;
 	}
 
 	MinMaxHSV squareColourAnalysis(Square _square, int colourReferenceType, bool init, vector<vector<Point> > &_drawing) {
@@ -123,8 +145,7 @@ class ColourAnalysis {
 
 		Mat3b hsv;
 		Mat3b bgr(lastFrame.at<Vec3b>(Point((int)point.x, (int)point.y)));
-		//cvtColor(bgr, hsv, COLOR_BGR2HSV); 
-		hsv = bgr;
+		cvtColor(bgr, hsv, COLOR_BGR2HSV); 
 		Vec3b hsvColour = hsv.at<Vec3b>(0,0);
 		//hsvColour = lastFrame.at<Vec3b>(Point((int)point.x, (int)point.y)); 
 		//if(thresh == 5) cout << "Type: " << hsvColour << endl;
@@ -140,7 +161,9 @@ class ColourAnalysis {
 		if(init) {
 			colourRange.min = hsvColour;
 			colourRange.max = hsvColour;
-			colourRange.sum = hsvColour;
+			colourRange.sum[0] = hsvColour[0];
+			colourRange.sum[1] = hsvColour[1];
+			colourRange.sum[2] = hsvColour[2];
 
 			count++;
 		} else {
@@ -165,10 +188,14 @@ class ColourAnalysis {
 	}
 
 	Vec3b maxHSV(Vec3b colour1, Vec3b colour2) {
-		int maxHue = max(colour1[0], colour2[0]);
-		int maxSaturation = max(colour1[1], colour2[1]);
-		int maxValue = max(colour1[2], colour2[2]);
-		return Vec3b(maxHue, maxSaturation, maxValue); 
+		int colour1Grey =  (colour1[0] + colour1[1] + colour1[2]) / 3;
+		int colour2Grey =  (colour2[0] + colour2[1] + colour2[2]) / 3;
+
+		if(colour1Grey > colour2Grey) {
+			return colour1;
+		} else {
+			return colour2;
+		}
 	}
 
 	int toGrey(Vec3b bgr) {
@@ -183,10 +210,14 @@ class ColourAnalysis {
 	}
 
 	Vec3b minHSV(Vec3b colour1, Vec3b colour2) {
-		int minHue = min(colour1[0], colour2[0]);
-		int minSaturation = min(colour1[1], colour2[1]);
-		int minValue = min(colour1[2], colour2[2]);
-		return Vec3b(minHue, minSaturation, minValue); 
+		int colour1Grey =  (colour1[0] + colour1[1] + colour1[2]) / 3;
+		int colour2Grey =  (colour2[0] + colour2[1] + colour2[2]) / 3;
+
+		if(colour1Grey > colour2Grey) {
+			return colour2;
+		} else {
+			return colour1;
+		}
 	}
 
 	float colourDistance(Vec3b colour1, Vec3b colour2) {
@@ -248,7 +279,7 @@ class DetermineChessPieces {
 			}
 		}*/
 		printMarker(Point(300, 300), drawing, 90);
-		vector<vector<Point> > filtered = filterChessPieceEdges(_detectedEdges, _localSquareList, _lastFrame);
+		vector<vector<Point> > filtered = filterChessPieces(_detectedEdges, _localSquareList, _lastFrame, _lastFrame);
 
 		bool found = false;
 		int contourNo = 0;
@@ -432,9 +463,11 @@ class DetermineChessPieces {
 	}	
 
 	private:
-	vector<vector<Point> > filterChessPieceEdges(Mat& edges, vector<Square>& _localSquareList, Mat& frame) {
+	vector<vector<Point> > filterChessPieces(Mat& edges, vector<Square>& _localSquareList, Mat& frame, Mat originalFrame) {
 
-
+		ColourAnalysis analysis(originalFrame);
+		//imshow("FRAME", frame);
+		//waitKey(0);
 		for(int i = 0; i < _localSquareList.size(); i++) {
 			Square square = _localSquareList[i];
 			printSquare(rotateSquare(square, { .rotation = square.rotation }), edges, Scalar(0));
@@ -499,16 +532,43 @@ class DetermineChessPieces {
 					}
 				}
 				if(isPiece) {
-					circle(frame, center, 10, Scalar(255, 255, 255), 3, LINE_4, 0);
-					drawContours( edges, pieceHulls, i, Scalar(100), 3, 8);
+					drawContours( edges, pieceHulls, i, Scalar(255, 255, 255), 2, 8);
+					Mat3b bgrMat(frame.at<Vec3b>(center));
+					Vec3b bgr = bgrMat.at<Vec3b>(0,0);
+					int centerColourGrey = greyColourPatch(center, frame);
+					cout << "Piece: " << centerColourGrey << endl;
+
+					if(centerColourGrey > 70) {
+						circle(frame, center, 10, Scalar(255, 255, 255), 3, LINE_4, 0);
+					} else {
+						circle(frame, center, 10, Scalar(0, 75, 150), 3, LINE_4, 0);
+					}
 				}
 			}
 		}
 
 
-		imshow("DETECTED EDGES: ", edges);
-		waitKey(0);
+		//imshow("DETECTED EDGES: ", edges);
+		//waitKey(0);
 		return pieceContours;
+	}
+
+	int greyColourPatch(Point center, Mat &frame) {
+		FPoint _center = { .x = (float) center.x, .y = (float) center.y };
+		Point point1 = fPointToPoint(shiftPoint(_center, 1,1));
+		Point point2 = fPointToPoint(shiftPoint(_center, -1,-1));
+
+		return (greyAt(center, frame) + greyAt(point1, frame) + greyAt(point2, frame)) / 3;
+	}
+
+	int greyAt(Point pos, Mat &frame) {
+		Mat3b bgrMat(frame.at<Vec3b>(pos));
+		Vec3b bgr = bgrMat.at<Vec3b>(0,0);
+		return toGrey(bgr);
+	}
+
+	int toGrey(Vec3b bgr) {
+		return (bgr[0] + bgr[1] + bgr[2]) / 3;
 	}
 
 	vector<vector<Point> > shrinkContour(vector<Point> contour, float scaleDown, int transformX, int transformY) {
