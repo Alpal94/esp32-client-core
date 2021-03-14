@@ -10,6 +10,35 @@ class Positions {
 	int noPieces;
 	ChessPiece board[8][8];
 	int turns;
+	bool updating;
+	bool stateChange;
+
+	public:
+	Positions() {
+	}
+
+	void beginBoardUpdate() {
+		updating = true;
+	}
+
+	void finishBoardUpdate() {
+		if(stateChange) turns++;
+		stateChange = false;
+		updating = false;
+	}
+
+	void insertChessPiece(ChessPiece piece, Point position) {
+		if(updating) {
+			ChessPiece oldPiece = board[position.x][position.y];
+			if(
+				oldPiece.type != piece.type &&
+				oldPiece.colour != piece.colour
+			) {
+				stateChange = true;
+			}
+			board[position.x][position.y] = piece;
+		}
+	}
 
 };
 
@@ -255,6 +284,8 @@ class DetermineChessPieces {
 	vector<vector<Point> > contours;
 	vector<vector<Point> > drawing;
 	vector<Vec4i> hierarchy;
+
+	Positions positions;
 
 	public:
 	void findChessPieces(
@@ -539,8 +570,10 @@ class DetermineChessPieces {
 					cout << "Piece: " << centerColourGrey << endl;
 
 					if(centerColourGrey > 70) {
+						//WHITE
 						circle(frame, center, 10, Scalar(255, 255, 255), 3, LINE_4, 0);
 					} else {
+						//BLACK
 						circle(frame, center, 10, Scalar(0, 75, 150), 3, LINE_4, 0);
 					}
 				}
