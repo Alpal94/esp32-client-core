@@ -4,16 +4,16 @@ using namespace cv;
 using namespace std;
 #define FROWS 120
 #define FCOLS 160
+#define BOARD 8
 
 class Positions {
 	private:
 	int noPieces;
-	ChessPiece board[8][8];
-	ChessPiece oldBoard[8][8];
+	ChessPiece board[BOARD][BOARD];
+	ChessPiece oldBoard[BOARD][BOARD];
 
 	int turns;
 	bool updating;
-	bool stateChange;
 
 	public:
 	Positions() {
@@ -21,8 +21,8 @@ class Positions {
 
 	void beginBoardUpdate() {
 		updating = true;
-		for(int i = 0; i < 8; i++) {
-			for(int j = 0; j < 8; j++) {
+		for(int i = 0; i < BOARD; i++) {
+			for(int j = 0; j < BOARD; j++) {
 				oldBoard[i][j] = board[i][j];
 				board[i][j].active = false;
 			}
@@ -30,15 +30,89 @@ class Positions {
 	}
 
 	void finishBoardUpdate() {
-		if(stateChange) turns++;
 		resolveBoardUpdate();
-		stateChange = false;
 		updating = false;
+		printBoard();
 	}
 	
 	void resolveBoardUpdate() {
-		for(int i = 0; i < 8; i++) {
-			for(int j = 0; j < 8; j++) {
+		if(turns == 0) return initBoard();
+		bool stateChange;
+		Point previous;
+		Point newPos;
+		for(int i = 0; i < BOARD; i++) {
+			for(int j = 0; j < BOARD; j++) {
+				bool stayedTheSame = board[i][j].active && oldBoard[i][j].active && board[i][j].colour == oldBoard[i][j].colour;
+				bool movedNew = board[i][j].active && !oldBoard[i][j].active;
+				bool movedKill = board[i][j].active && oldBoard[i][j].active && board[i][j].colour != oldBoard[i][j].colour;
+				bool previousPosition = !board[i][j].active && oldBoard[i][j].active;
+				if(stayedTheSame) board[i][j] = oldBoard[i][j]; 
+				else if(previousPosition) previous = Point(i, j);
+				else if(movedNew || movedKill) newPos = Point(i, j);
+				
+				if(previousPosition || movedNew || movedKill) stateChange = true;
+			}
+		}
+		if(stateChange) {
+			turns++;
+			board[newPos.x][newPos.y].type = oldBoard[previous.x][previous.y].type;
+		}
+	}
+
+	void printBoard() {
+		printf("\n");
+		for(int row = 0; row < BOARD; row++) {
+			for(int col = 0; col < BOARD; col++) {
+				if(!board[col][row].active) {
+					printf("   ");
+					continue;
+				}
+				if(board[col][row].colour == White) {
+					switch(board[col][row].type) {
+						case Rook: printf(" ♜ "); break;
+						case Knight: printf(" ♞ "); break;
+						case Bishop: printf(" ♝ "); break;
+						case Queen: printf(" ♛ "); break;
+						case King: printf(" ♚ "); break;
+						case Pawn: printf(" ♟︎ "); break;
+						case Unknown: printf(" - "); break;
+						default: printf(" E ");
+					}
+				} else {
+					switch(board[col][row].type) {
+						case Rook: printf(" ♖ "); break;
+						case Knight: printf(" ♘ "); break;
+						case Bishop: printf(" ♗ "); break;
+						case Queen: printf(" ♕ "); break;
+						case King: printf(" ♔ "); break;
+						case Pawn: printf(" ♙ "); break;
+						case Unknown: printf(" - "); break;
+						default: printf(" E ");
+					}
+				}
+			}
+			printf("\n");
+		}
+	}
+
+	void initBoard() {
+		turns++;
+		for(int row = 0; row < BOARD; row++) {
+			for(int col = 0; col < BOARD; col++) {
+				if(row == 0 || row == 7) {
+					switch(col) {
+						case 0:
+						case 7: board[col][row].type = Rook; break;
+						case 1:
+						case 6: board[col][row].type = Knight; break;
+						case 2:
+						case 5: board[col][row].type = Bishop; break;
+						case 3: board[col][row].type = Queen; break;
+						case 4: board[col][row].type = King; break;
+					}
+				} else if(row == 1 || row == 6) {
+					board[col][row].type = Pawn;
+				}
 			}
 		}
 	}
