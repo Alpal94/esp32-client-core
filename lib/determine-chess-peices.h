@@ -9,6 +9,8 @@ class Positions {
 	private:
 	int noPieces;
 	ChessPiece board[8][8];
+	ChessPiece oldBoard[8][8];
+
 	int turns;
 	bool updating;
 	bool stateChange;
@@ -19,24 +21,35 @@ class Positions {
 
 	void beginBoardUpdate() {
 		updating = true;
+		for(int i = 0; i < 8; i++) {
+			for(int j = 0; j < 8; j++) {
+				oldBoard[i][j] = board[i][j];
+				board[i][j].active = false;
+			}
+		}
 	}
 
 	void finishBoardUpdate() {
 		if(stateChange) turns++;
+		resolveBoardUpdate();
 		stateChange = false;
 		updating = false;
 	}
-
-	void insertChessPiece(ChessPiece piece, Point position) {
-		if(updating) {
-			ChessPiece oldPiece = board[position.x][position.y];
-			if(
-				oldPiece.type != piece.type &&
-				oldPiece.colour != piece.colour
-			) {
-				stateChange = true;
+	
+	void resolveBoardUpdate() {
+		for(int i = 0; i < 8; i++) {
+			for(int j = 0; j < 8; j++) {
 			}
-			board[position.x][position.y] = piece;
+		}
+	}
+
+	void insertChessPiece(Colour colour, Point position) {
+		if(updating) {
+			board[position.x][position.y] = {
+				.type = Unknown,
+				.colour = colour,
+				.active = true
+			};
 		}
 	}
 
@@ -536,12 +549,14 @@ class DetermineChessPieces {
 		vector<vector<Point> > pieceContours;
 		vector<Vec4i> pieceHierarchy;
 		findContours( edges, pieceContours, pieceHierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+		positions.beginBoardUpdate();
 		vector<vector<Point> > pieceHulls(pieceContours.size());
 		for( int i = 0; i < pieceContours.size(); i++) {
 			convexHull(pieceContours[i], pieceHulls[i]); 
 			Moments m = moments(pieceHulls[i]);
 			if(m.m00 > 200) {
 				bool isPiece = false;
+				Square square;
 				Point center = Point(int(m.m10 / m.m00), int(m.m01 / m.m00));
 				for(int i = 0; i < _localSquareList.size(); i++) {
 					float shift = -_localSquareList[i].spacing / 5 ;
@@ -560,6 +575,7 @@ class DetermineChessPieces {
 					bounds.push_back(fPointToPoint(shrinkSquare.northEast));
 					if(pointPolygonTest(bounds, center, false) > 0) {
 						isPiece = true;
+						square = _localSquareList[i];
 					}
 				}
 				if(isPiece) {
@@ -569,18 +585,22 @@ class DetermineChessPieces {
 					int centerColourGrey = greyColourPatch(center, frame);
 					cout << "Piece: " << centerColourGrey << endl;
 
+					Point position = Point(square.x, square.y); 
 					if(centerColourGrey > 70) {
 						//WHITE
 						circle(frame, center, 10, Scalar(255, 255, 255), 3, LINE_4, 0);
+						positions.insertChessPiece(White, position);
 					} else {
 						//BLACK
 						circle(frame, center, 10, Scalar(0, 75, 150), 3, LINE_4, 0);
+						positions.insertChessPiece(Black, position);
+
 					}
 				}
 			}
 		}
 
-
+		positions.finishBoardUpdate();
 		//imshow("DETECTED EDGES: ", edges);
 		//waitKey(0);
 		return pieceContours;

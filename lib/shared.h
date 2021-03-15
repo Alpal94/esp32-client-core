@@ -87,7 +87,8 @@ enum PieceType {
 	Bishop,
 	Knight,
 	Rook,
-	Pawn
+	Pawn,
+	Unknown
 };
 
 enum Colour { 
@@ -98,6 +99,7 @@ enum Colour {
 struct ChessPiece {
 	PieceType type;
 	Colour colour;
+	bool active;
 };
 
 enum Orientation {
