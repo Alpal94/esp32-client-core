@@ -584,6 +584,10 @@ class DetermineChessPieces {
 	}	
 
 	private:
+	struct SquareInfo {
+		vector<Point> cContours;
+		Square square;
+	};
 	void filterChessPieces(Mat& edges, vector<Square>& _localSquareList, Mat& frame, Mat originalFrame) {
 
 		if(_localSquareList.size() != 64) return;
@@ -632,7 +636,7 @@ class DetermineChessPieces {
 		findContours( edges, pieceContours, pieceHierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
 		positions.beginBoardUpdate();
 		vector<vector<Point> > pieceHulls(pieceContours.size());
-		vector<vector<Point> > squareHulls(_localSquareList.size());
+		vector<SquareInfo> squareHulls(_localSquareList.size());
 		for( int i = 0; i < pieceContours.size(); i++) {
 			vector<Point> approxPoly;
 			convexHull(pieceContours[i], pieceHulls[i]); 
@@ -665,36 +669,16 @@ class DetermineChessPieces {
 					}
 				}
 				if(isPiece) {
-					if(!squareHulls[squareIndex].size()) {
-						squareHulls[squareIndex] = pieceContours[i];
+					if(!squareHulls[squareIndex].cContours.size()) {
+						squareHulls[squareIndex].cContours = pieceContours[i];
 					} else {
 						for(int p = 0; p < pieceContours[i].size(); p++) {
-							squareHulls[squareIndex].push_back(pieceContours[i][p]);
+							squareHulls[squareIndex].cContours.push_back(pieceContours[i][p]);
 						}
 					}
-
-					Mat3b bgrMat(frame.at<Vec3b>(center));
-					Vec3b bgr = bgrMat.at<Vec3b>(0,0);
-
-					Point inPolygon = findPointInPolygon(approxPoly);
-					//cout << "Center colour grey: " << centerColourGrey << endl;
+					squareHulls[squareIndex].square = square;
 
 
-					//MinMaxHSV res = analysis.contourColourAnalysis(center, pieceHulls[i]);
-					Vec3b comp = colourPatch(center, originalFrame);
-
-					cout << "Comp: " << toGrey(comp) << endl;
-					Point position = Point(square.x, square.y); 
-					if(toGrey(comp) < 70) {
-						//BLACK
-						circle(frame, center, 10, Scalar(0, 75, 150), 3, LINE_4, 0);
-						positions.insertChessPiece(Black, position);
-					} else {
-						//WHITE
-						circle(frame, center, 10, Scalar(255, 255, 255), 3, LINE_4, 0);
-						positions.insertChessPiece(White, position);
-
-					}
 				}
 				//
 				/*vector<vector<Point> > all;
@@ -705,14 +689,41 @@ class DetermineChessPieces {
 		}
 		for( int i = 0; i < _localSquareList.size(); i++) {
 			vector<Point> hull;
-			if(squareHulls[i].size()) {
-				convexHull(squareHulls[i], hull); 
-				cout << "HULL: " << squareHulls[i].size() << endl;
+			Square square = squareHulls[i].square;
+			if(squareHulls[i].cContours.size()) {
+				convexHull(squareHulls[i].cContours, hull); 
+				//cout << "HULL: " << squareHulls[i].cContours.size() << endl;
 				vector<vector<Point> > hullsPrint;
 				hullsPrint.push_back(hull);
 				drawContours( frame, hullsPrint, 0, Scalar(255, 255, 255), 2, 8);
 
-				Moments m = moments(squareHulls[i]);
+				Moments m = moments(hull);
+				Point center = Point(int(m.m10 / m.m00), int(m.m01 / m.m00));
+
+				//MinMaxHSV res = analysis.contourColourAnalysis(center, hull);
+				Vec3b comp = colourPatch(center, originalFrame);
+
+				//cout << "Comp: " << toGrey(comp) << endl;
+				Point position = Point(square.x, square.y); 
+				if(toGrey(comp) < 50) {
+					//BLACK
+					circle(frame, center, 10, Scalar(0, 75, 150), 3, LINE_4, 0);
+					positions.insertChessPiece(Black, position);
+				} else {
+					Vec3b hsvComp = toHSV(comp);
+					cout << "HSV: " << hsvComp << endl;
+					if(((hsvComp[0] > 0 && hsvComp[0] < 15) || hsvComp[0] > 170) && hsvComp[2] < 100) {
+						cout << "Black: " << hsvComp << endl;
+						//BLACK
+						circle(frame, center, 10, Scalar(0, 75, 150), 3, LINE_4, 0);
+						positions.insertChessPiece(Black, position);
+					} else {
+						//WHITE
+						circle(frame, center, 10, Scalar(255, 255, 255), 3, LINE_4, 0);
+						positions.insertChessPiece(White, position);
+
+					}
+				}
 			}
 		}
 		for( int i = 0; i < pieceHulls.size(); i++) {
