@@ -74,6 +74,7 @@ class StreamProcessing {
 		//bool useLaplacianSharpening = false;
 		//GaussianBlur( lastFrame, detected_edges, Size(3,3), 0 );
 		fastNlMeansDenoisingColored(lastFrame, detected_edges, 10, 10, 7, 21);
+		lastFrame = detected_edges.clone();
 	//	bilateralFilter(lastFrame, detected_edges, 9, 30, 30);
 		Mat grey;
 		cvtColor(detected_edges, grey, COLOR_BGR2GRAY);
@@ -747,8 +748,12 @@ class StreamProcessing {
 				if(!CALIBRATE) {
 					Mat display_mat;
 					resize(lastFrame, display_mat, Size(), 0.9, 0.9);
-					//cvtColor(display_mat, display_mat, COLOR_BGR2HSV);
 					imshow (window_name, display_mat);
+					Mat channels[3];
+					split(display_mat, channels);
+					cvtColor(display_mat, display_mat, COLOR_BGR2GRAY);
+					//threshold(display_mat, display_mat, 150, 255, THRESH_TOZERO);
+					//imshow (window_name, display_mat);
 				}
 				waitKey(0);
 			}

@@ -160,7 +160,9 @@ class ColourAnalysis {
 		count = 0;
 		MinMaxHSV colour;
 		Point2f floatCenter = Point2f((float) center.x, (float) center.y);
-		floodFill(floatCenter, contour, colour, 5, true);
+		//printf("Starting floodfill: \n\n\n");
+		floodFill(floatCenter, contour, colour, 0, true);
+		//printf("\n\n\n");
 		if(count) {
 			colour.average[0] = colour.sum[0] / count;
 			colour.average[1] = colour.sum[1] / count;
@@ -259,14 +261,15 @@ class ColourAnalysis {
 
 		seen[(int)point.x][(int)point.y] = true;
 
-		Mat3b hsv;
-		Mat3b bgr(lastFrame.at<Vec3b>(Point((int)point.x, (int)point.y)));
-		cvtColor(bgr, hsv, COLOR_BGR2HSV); 
-		Vec3b hsvColour = hsv.at<Vec3b>(0,0);
+		//Mat3b hsv;
+		//Mat3b bgr(lastFrame.at<Vec3b>(Point((int)point.x, (int)point.y)));
+		//cvtColor(bgr, hsv, COLOR_BGR2HSV); 
+		//Vec3b hsvColour = hsv.at<Vec3b>(0,0);
+		Vec3b hsvColour = lastFrame.at<Vec3b>(Point((int)point.x, (int)point.y));
 		//hsvColour = lastFrame.at<Vec3b>(Point((int)point.x, (int)point.y)); 
 		//if(thresh == 5) cout << "Type: " << hsvColour << endl;
 
-		//cout << toGrey(hsvColour) << " ";
+		//cout << toGrey(hsvColour) << " (" << point << ") ";
 		string key = "   ";
 		for(int i = 0; i < 3; i++) key[i] = (uchar) hsvColour[i] / 5;
 		try {
@@ -397,7 +400,7 @@ class DetermineChessPieces {
 			}
 		}*/
 		printMarker(Point(300, 300), drawing, 90);
-		vector<vector<Point> > filtered = filterChessPieces(_detectedEdges, _localSquareList, _lastFrame, _lastFrame);
+		filterChessPieces(_detectedEdges, _localSquareList, _lastFrame, _lastFrame);
 
 		bool found = false;
 		int contourNo = 0;
@@ -581,9 +584,11 @@ class DetermineChessPieces {
 	}	
 
 	private:
-	vector<vector<Point> > filterChessPieces(Mat& edges, vector<Square>& _localSquareList, Mat& frame, Mat originalFrame) {
+	void filterChessPieces(Mat& edges, vector<Square>& _localSquareList, Mat& frame, Mat originalFrame) {
 
-		ColourAnalysis analysis(originalFrame);
+		if(_localSquareList.size() != 64) return;
+		Mat clone = originalFrame.clone();
+		ColourAnalysis analysis(clone);
 		//imshow("FRAME", frame);
 		//waitKey(0);
 		for(int i = 0; i < _localSquareList.size(); i++) {
@@ -591,13 +596,13 @@ class DetermineChessPieces {
 			printSquare(rotateSquare(square, { .rotation = square.rotation }), edges, Scalar(0));
 		}
 
-		vector<Vec4i> lines;
+		/*vector<Vec4i> lines;
 		HoughLinesP(edges, lines, 1, 2 * CV_PI/180, 30, 20, 5);
 		for( size_t i = 0; i < lines.size(); i++) {
 			Point pt1 = Point(lines[i][0], lines[i][1]);
 			Point pt2 = Point(lines[i][2], lines[i][3]);
 			line( edges, pt1, pt2, Scalar(0), 10, LINE_AA);
-		}
+		}*/
 		/*lines.clear();
 		HoughLinesP(edges, lines, 1, 2 * CV_PI/180, 30, 20, 5);
 		for( size_t i = 0; i < lines.size(); i++) {
@@ -620,21 +625,27 @@ class DetermineChessPieces {
 		for( int i = 0; i < contours.size(); i++) {
 			drawContours( edges, contours, i, Scalar(255), 4, 8);
 		}
+		//imshow("test", edges);
+		//waitKey(0);
 		vector<vector<Point> > pieceContours;
 		vector<Vec4i> pieceHierarchy;
 		findContours( edges, pieceContours, pieceHierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
 		positions.beginBoardUpdate();
 		vector<vector<Point> > pieceHulls(pieceContours.size());
+		vector<vector<Point> > squareHulls(_localSquareList.size());
 		for( int i = 0; i < pieceContours.size(); i++) {
+			vector<Point> approxPoly;
 			convexHull(pieceContours[i], pieceHulls[i]); 
+			approxPolyDP(pieceContours[i], approxPoly, 3.0, true); 
 			Moments m = moments(pieceHulls[i]);
-			if(m.m00 > 200) {
+			if(m.m00 > 100 && m.m00 < 4800) {
 				bool isPiece = false;
 				Square square;
+				int squareIndex;
 				Point center = Point(int(m.m10 / m.m00), int(m.m01 / m.m00));
-				for(int i = 0; i < _localSquareList.size(); i++) {
-					float shift = -_localSquareList[i].spacing / 5 ;
-					Square shrinkSquare = _localSquareList[i];
+				for(int j = 0; j < _localSquareList.size(); j++) {
+					float shift = -_localSquareList[j].spacing / 5 ;
+					Square shrinkSquare = _localSquareList[j];
 					shrinkSquare.northEast = shiftPoint(shrinkSquare.northEast, shift, shift);
 					shrinkSquare.northWest = shiftPoint(shrinkSquare.northWest, -shift, shift);
 					shrinkSquare.southWest = shiftPoint(shrinkSquare.southWest, -shift, -shift);
@@ -649,49 +660,135 @@ class DetermineChessPieces {
 					bounds.push_back(fPointToPoint(shrinkSquare.northEast));
 					if(pointPolygonTest(bounds, center, false) > 0) {
 						isPiece = true;
-						square = _localSquareList[i];
+						squareIndex = j;
+						square = _localSquareList[j];
 					}
 				}
 				if(isPiece) {
-					drawContours( edges, pieceHulls, i, Scalar(255, 255, 255), 2, 8);
+					if(!squareHulls[squareIndex].size()) {
+						squareHulls[squareIndex] = pieceContours[i];
+					} else {
+						for(int p = 0; p < pieceContours[i].size(); p++) {
+							squareHulls[squareIndex].push_back(pieceContours[i][p]);
+						}
+					}
+
 					Mat3b bgrMat(frame.at<Vec3b>(center));
 					Vec3b bgr = bgrMat.at<Vec3b>(0,0);
-					int centerColourGrey = greyColourPatch(center, frame);
-					cout << "Piece: " << centerColourGrey << endl;
 
+					Point inPolygon = findPointInPolygon(approxPoly);
+					//cout << "Center colour grey: " << centerColourGrey << endl;
+
+
+					//MinMaxHSV res = analysis.contourColourAnalysis(center, pieceHulls[i]);
+					Vec3b comp = colourPatch(center, originalFrame);
+
+					cout << "Comp: " << toGrey(comp) << endl;
 					Point position = Point(square.x, square.y); 
-					if(centerColourGrey > 70) {
-						//WHITE
-						circle(frame, center, 10, Scalar(255, 255, 255), 3, LINE_4, 0);
-						positions.insertChessPiece(White, position);
-					} else {
+					if(toGrey(comp) < 70) {
 						//BLACK
 						circle(frame, center, 10, Scalar(0, 75, 150), 3, LINE_4, 0);
 						positions.insertChessPiece(Black, position);
+					} else {
+						//WHITE
+						circle(frame, center, 10, Scalar(255, 255, 255), 3, LINE_4, 0);
+						positions.insertChessPiece(White, position);
 
 					}
 				}
+				//
+				/*vector<vector<Point> > all;
+				all.clear();
+				all.push_back(approxPoly);
+				drawContours( originalFrame, all, 0, Scalar(255, 255, 255), 2, 8);*/
 			}
+		}
+		for( int i = 0; i < _localSquareList.size(); i++) {
+			vector<Point> hull;
+			if(squareHulls[i].size()) {
+				convexHull(squareHulls[i], hull); 
+				cout << "HULL: " << squareHulls[i].size() << endl;
+				vector<vector<Point> > hullsPrint;
+				hullsPrint.push_back(hull);
+				drawContours( frame, hullsPrint, 0, Scalar(255, 255, 255), 2, 8);
+
+				Moments m = moments(squareHulls[i]);
+			}
+		}
+		for( int i = 0; i < pieceHulls.size(); i++) {
+			//drawContours( frame, pieceHulls, i, Scalar(255, 255, 255), 2, 8);
+			//drawContours( frame, contours, i, Scalar(255, 255, 255), 4, 8);
 		}
 
 		positions.finishBoardUpdate();
 		//imshow("DETECTED EDGES: ", edges);
 		//waitKey(0);
-		return pieceContours;
 	}
 
-	int greyColourPatch(Point center, Mat &frame) {
-		FPoint _center = { .x = (float) center.x, .y = (float) center.y };
-		Point point1 = fPointToPoint(shiftPoint(_center, 1,1));
-		Point point2 = fPointToPoint(shiftPoint(_center, -1,-1));
+	Point findPointInPolygon(vector<Point> polygon) {
+		float shift = 1;
+		FPoint onLine = pointToFPoint(polygon[0]);
+		Point test1 = fPointToPoint(shiftPoint(onLine, shift, shift));
+		Point test2 = fPointToPoint(shiftPoint(onLine, shift, -shift));
+		Point test3 = fPointToPoint(shiftPoint(onLine, -shift, -shift));
+		Point test4 = fPointToPoint(shiftPoint(onLine, -shift, shift));
+		Point test5 = fPointToPoint(shiftPoint(onLine, shift, 0));
+		Point test6 = fPointToPoint(shiftPoint(onLine, -shift, 0));
+		Point test7 = fPointToPoint(shiftPoint(onLine, 0, shift));
+		Point test8 = fPointToPoint(shiftPoint(onLine, 0, -shift));
+		if(pointPolygonTest(polygon, test1, false) > 0) return test1;
+		if(pointPolygonTest(polygon, test2, false) > 0) return test2;
+		if(pointPolygonTest(polygon, test3, false) > 0) return test3;
+		if(pointPolygonTest(polygon, test4, false) > 0) return test4;
+		if(pointPolygonTest(polygon, test5, false) > 0) return test5;
+		if(pointPolygonTest(polygon, test6, false) > 0) return test6;
+		if(pointPolygonTest(polygon, test7, false) > 0) return test7;
+		if(pointPolygonTest(polygon, test8, false) > 0) return test8;
+		return Point(-1, -1);
+	}
 
-		return (greyAt(center, frame) + greyAt(point1, frame) + greyAt(point2, frame)) / 3;
+	Vec3b colourPatch(Point center, Mat &frame) {
+		FPoint _center = { .x = (float) center.x, .y = (float) center.y };
+		int shift = 5;
+		int b = 0, g = 0, r = 0;
+		int grey = 0;
+		for(float i = -shift; i < shift; i++) {
+			for(float j = -shift; j < shift; j++) {
+				FPoint shiftPointed = shiftPoint(_center, i,j);
+				Point point = fPointToPoint(shiftPoint(_center, i,j));
+
+				grey += greyAt(point, frame);		
+
+				Vec3b bgr = bgrAt(point, frame);
+				b += bgr[0];
+				g += bgr[1];
+				r += bgr[2];
+			}
+		}
+		int count = 4 * shift * shift;
+		Vec3b bgrAverage(b / count, g / count, r / count);
+		Vec3b hsvAverage = bgrAverage;
+		//printf("HSV: %d %d %d   BGR: %d %d %d\n", hsvAverage[0], hsvAverage[1], hsvAverage[2], bgrAverage[0], bgrAverage[1], bgrAverage[2]);
+		//printf("Colour: %d ", grey / count);
+
+		return hsvAverage;
 	}
 
 	int greyAt(Point pos, Mat &frame) {
 		Mat3b bgrMat(frame.at<Vec3b>(pos));
 		Vec3b bgr = bgrMat.at<Vec3b>(0,0);
 		return toGrey(bgr);
+	}
+
+	Vec3b toHSV(Vec3b bgr) {
+		Mat3b hsvMat;
+		Mat3b bgrMat(bgr);
+		cvtColor(bgrMat, hsvMat, COLOR_BGR2HSV);
+		return hsvMat.at<Vec3b>(0,0);
+	}
+	Vec3b bgrAt(Point pos, Mat &frame) {
+		Mat3b bgrMat(frame.at<Vec3b>(pos));
+		return bgrMat.at<Vec3b>(0,0);
 	}
 
 	int toGrey(Vec3b bgr) {
@@ -727,25 +824,26 @@ class DetermineChessPieces {
 		drawing.push_back(marker);
 	}
 	void printSquare(Square _square, Mat &_display, Scalar colour) {
+		int thickness = 20;
 		line( _display,
 				Point(_square.northEast.x, _square.northEast.y),
 				Point(_square.northWest.x, _square.northWest.y),
-				colour, 5, 3);
+				colour, thickness, 3);
 
 		line( _display,
 				Point(_square.southEast.x, _square.southEast.y),
 				Point(_square.southWest.x, _square.southWest.y),
-				colour, 5, 3);
+				colour, thickness, 3);
 
 		line( _display,
 				Point(_square.southWest.x, _square.southWest.y),
 				Point(_square.northWest.x, _square.northWest.y),
-				colour, 5, 3);
+				colour, thickness, 3);
 
 		line( _display,
 				Point(_square.southEast.x, _square.southEast.y),
 				Point(_square.northEast.x, _square.northEast.y),
-				colour, 5, 3);
+				colour, thickness, 3);
 	}
 	bool evaluateChessPiece(size_t contourIndex, size_t contourSubIndex, FPoint center, Mat &lastFrame) {
 		int count = 0;

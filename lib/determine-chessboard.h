@@ -320,7 +320,7 @@ class DetermineChessBoard {
 				}
 			}
 
-			printSquare(squareList[i], _lastFrame);
+			//printSquare(squareList[i], _lastFrame);
 			lastSquareIndex = i;
 			insertSquare(&localSquareMap, posX, posY, squareList[i], { .spacing = 0, .rotation = -squareList[i].rotation, .north = 0, .west = 0 }, Point(0,0), _lastFrame, true);
 			count++;
@@ -490,7 +490,7 @@ class DetermineChessBoard {
 					end = rotateSquare(end, { .spacing = 0, .rotation = -end.rotation, .north = 0, .west = 0 });
 					endX = i;
 					endY = j;
-					printSquare(end, _lastFrame);
+					//printSquare(end, _lastFrame);
 					northEast = end.southWest;
 					found = true;
 					break;
@@ -508,12 +508,12 @@ class DetermineChessBoard {
 
 		Square current = start;
 		Square rowStart = start;
-		printSquare(start, _lastFrame);
+		//printSquare(start, _lastFrame);
 		for(int w = 0; w < width; w++) {
 			for(int h = 1; h < height; h++) {
 				//current = generateNeighboringSquare(current, current.southWest, current.southEast, current.northWest, current.northEast, SW, SE, NW, NE, spacing, _lastFrame);
 				current = generateNeighboringSquare(current, current.southEast, current.southWest, current.northEast, current.northWest, SE, SW, NE, NW, spacing, _lastFrame);
-				printSquare(current, _lastFrame);
+				//printSquare(current, _lastFrame);
 
 			}
 			if(width != w + 1) {
