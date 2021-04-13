@@ -316,3 +316,14 @@ Square translateSquare(Square square, MapOffset offset) {
 
 	return square;
 }
+
+Vec3b toHSV(Vec3b bgr) {
+	Mat3b hsvMat;
+	Mat3b bgrMat(bgr);
+	cvtColor(bgrMat, hsvMat, COLOR_BGR2HSV);
+	return hsvMat.at<Vec3b>(0,0);
+}
+Vec3b bgrAt(Point pos, Mat &frame) {
+	Mat3b bgrMat(frame.at<Vec3b>(pos));
+	return bgrMat.at<Vec3b>(0,0);
+}

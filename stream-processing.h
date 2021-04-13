@@ -1,6 +1,7 @@
 #include "lib/shared.h"
 #include "lib/determine-chessboard.h"
 #include "lib/determine-chess-peices.h"
+#include "lib/hand-detector.h"
 #include "lib/calibrate-camera.h"
 #include "lib/hsv-experiment.h"
 
@@ -28,6 +29,7 @@ class StreamProcessing {
 	CalibrateCamera calibrate;
 	DetermineChessBoard determineChessboard;
 	DetermineChessPieces determineChessPieces;
+	HandDetector handDetector;
 
 	enum TraversalState { Left, Right, Up, Down, Forward, Back } traversalState;
 	RobotPosition robotPosition = { .x = 18, .y = 10, .z = -5};
@@ -54,7 +56,6 @@ class StreamProcessing {
 	}
 
 	Mat evaluateContours(float scale, vector<vector<Point> > &_contours) {
-		printf("EVALUATE CONTOURS\n");
 		Mat dst, detected_edges;
 		int lowThreshold = 15;
 		//const int max_lowThreshold = 100;
@@ -215,12 +216,12 @@ class StreamProcessing {
 		auto startDetermineLines = std::chrono::high_resolution_clock::now();
 		vector<LineMetadata> mergedLines = determineLines(detected_edges, squares);
 		timer(startDetermineLines, (char*) "DetermineLines");
-		if(true) {
+		if(!handDetector.isHand(lastFrame)) {
 
 			Mat detectedSquares;
 			lastFrame.copyTo(detectedSquares);
 			detectedSquares.setTo(Scalar(0,0,0));
-
+			
 			determineChessboard.findChessboardSquares(
 					mergedLines,
 					squares,
@@ -746,14 +747,20 @@ class StreamProcessing {
 				//}
 			} else {
 				if(!CALIBRATE) {
-					Mat display_mat;
+					Mat display_mat, mask, mask2, mask3, res;
 					resize(lastFrame, display_mat, Size(), 0.9, 0.9);
-					imshow (window_name, display_mat);
-					Mat channels[3];
-					split(display_mat, channels);
-					cvtColor(display_mat, display_mat, COLOR_BGR2GRAY);
-					//threshold(display_mat, display_mat, 150, 255, THRESH_TOZERO);
 					//imshow (window_name, display_mat);
+					//Mat channels[3];
+					//split(display_mat, channels);
+					//cvtColor(display_mat, display_mat, COLOR_BGR2HSV);
+					//threshold(channels[0], channels[0], 0, 255, THRESH_TOZERO);
+					//inRange(display_mat, Scalar(0,50,50), Scalar(15,255,255), mask);
+					//inRange(display_mat, Scalar(0, 0, 0), Scalar(0, 0, 0), mask2);
+					//inRange(display_mat, Scalar(0,50,50), Scalar(15,255,255), mask3);
+
+					//bitwise_or(mask2, mask3, res);
+					imshow (window_name, display_mat);
+					//imshow ("window 2", lastFrame);
 				}
 				waitKey(0);
 			}

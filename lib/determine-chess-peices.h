@@ -107,8 +107,8 @@ class Positions {
 						case 6: board[col][row].type = Knight; break;
 						case 2:
 						case 5: board[col][row].type = Bishop; break;
-						case 3: board[col][row].type = Queen; break;
-						case 4: board[col][row].type = King; break;
+						case 3: board[col][row].type = King; break;
+						case 4: board[col][row].type = Queen; break;
 					}
 				} else if(row == 1 || row == 6) {
 					board[col][row].type = Pawn;
