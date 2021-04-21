@@ -11,6 +11,7 @@ class Positions {
 	int noPieces;
 	ChessPiece board[BOARD][BOARD];
 	ChessPiece oldBoard[BOARD][BOARD];
+	FenProcessor fen;
 
 	int turns;
 	bool updating;
@@ -33,6 +34,11 @@ class Positions {
 		resolveBoardUpdate();
 		updating = false;
 		printBoard();
+		
+		char fenString[] = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+		char move[] = "c7c5";
+		char* newFen = fen.updateFen(fenString, move);
+		printf("NEW FEN: %s\n", newFen);
 	}
 	
 	void resolveBoardUpdate() {
@@ -156,9 +162,13 @@ class ColourAnalysis {
 		return true;
 	}
 
-	MinMaxHSV contourColourAnalysis(Point center, vector<Point>& contour) {
+	MinMaxHSV contourColourAnalysis(Point center, vector<Point>& contour, Vec3b colourTest, Vec3b colourTestMargin) {
 		count = 0;
-		MinMaxHSV colour;
+		MinMaxHSV colour = {
+			.colourTest = colourTest,
+			.colourTestMargin = colourTestMargin,
+			.testColour = true
+		};
 		Point2f floatCenter = Point2f((float) center.x, (float) center.y);
 		//printf("Starting floodfill: \n\n\n");
 		floodFill(floatCenter, contour, colour, 0, true);
@@ -261,41 +271,62 @@ class ColourAnalysis {
 
 		seen[(int)point.x][(int)point.y] = true;
 
-		//Mat3b hsv;
-		//Mat3b bgr(lastFrame.at<Vec3b>(Point((int)point.x, (int)point.y)));
-		//cvtColor(bgr, hsv, COLOR_BGR2HSV); 
-		//Vec3b hsvColour = hsv.at<Vec3b>(0,0);
-		Vec3b hsvColour = lastFrame.at<Vec3b>(Point((int)point.x, (int)point.y));
-		//hsvColour = lastFrame.at<Vec3b>(Point((int)point.x, (int)point.y)); 
-		//if(thresh == 5) cout << "Type: " << hsvColour << endl;
+		Mat3b hsv;
+		Mat3b bgr(lastFrame.at<Vec3b>(Point((int)point.x, (int)point.y)));
+		cvtColor(bgr, hsv, COLOR_BGR2HSV); 
+		Vec3b hsvColour = hsv.at<Vec3b>(0,0);
+		Vec3b bgrColour = lastFrame.at<Vec3b>(Point((int)point.x, (int)point.y));
 
-		//cout << toGrey(hsvColour) << " (" << point << ") ";
+		if(colourRange.testColour) {
+			int grey = (bgrColour[0] + bgrColour[1] + bgrColour[2]) / 3;
+			/*int hue = hsvColour[0];
+			int saturation = hsvColour[1];
+			int value = hsvColour[2];
+			int lowerHue = colourRange.colourTest[0] - colourRange.colourTestMargin[0];
+			int upperHue = colourRange.colourTest[0] + colourRange.colourTestMargin[0];
+			int lowerSaturation = colourRange.colourTest[1] - colourRange.colourTestMargin[1];
+			int upperSaturation = colourRange.colourTest[1] + colourRange.colourTestMargin[1];
+			int lowerValue = colourRange.colourTest[2] - colourRange.colourTestMargin[2];
+			int upperValue = colourRange.colourTest[2] + colourRange.colourTestMargin[2];
+
+
+			bool hueInBounds = (hue > lowerHue && hue < upperHue);// || (lowerHue < 0 && 179 + lowerHue < hue) || (upperHue > 179 && upperHue - 179 > hue);
+			if(hueInBounds && saturation > lowerSaturation && saturation < upperSaturation && value > lowerValue && value < upperValue) {
+				//colourRange.colourTestCount++;
+				printMarker(Point((int) point.x,(int) point.y), drawing, 1);
+			}
+			printf("COLOUR TEST: TEST: hsv:(%d %d %d) h:(%d %d) s:(%d %d) v:(%d %d)\n", hue, saturation, value, lowerHue, upperHue, lowerSaturation, upperSaturation, lowerValue, upperValue);*/
+			//printf("- %d -\n", grey);
+			if(grey < 50) colourRange.colourTestCount++;
+			colourRange.colourTestTotalCount++;
+		}
+
 		string key = "   ";
-		for(int i = 0; i < 3; i++) key[i] = (uchar) hsvColour[i] / 5;
+		/*for(int i = 0; i < 3; i++) key[i] = (uchar) bgrColour[i] / 5;
 		try {
 			colourRange.hist.at(key)++;
 		} catch (const std::out_of_range& oor) {
 			colourRange.hist.insert({key, 1});
-		}
+		}*/
 		if(init) {
-			colourRange.min = hsvColour;
-			colourRange.max = hsvColour;
-			colourRange.sum[0] = hsvColour[0];
-			colourRange.sum[1] = hsvColour[1];
-			colourRange.sum[2] = hsvColour[2];
+			colourRange.min = bgrColour;
+			colourRange.max = bgrColour;
+			colourRange.sum[0] = bgrColour[0];
+			colourRange.sum[1] = bgrColour[1];
+			colourRange.sum[2] = bgrColour[2];
 
 			count++;
 		} else {
 				
-			//maxDiff(colourRange.max, hsvColour) < 40 && maxDiff(colourRange.min, hsvColour) < 40
+			//maxDiff(colourRange.max, bgrColour) < 40 && maxDiff(colourRange.min, bgrColour) < 40
 
 				printMarker(Point((int) point.x,(int) point.y), drawing, 1);
-				colourRange.max = maxHSV(colourRange.max, hsvColour);
-				colourRange.min = minHSV(colourRange.min, hsvColour);
+				colourRange.max = maxHSV(colourRange.max, bgrColour);
+				colourRange.min = minHSV(colourRange.min, bgrColour);
 
-				colourRange.sum[0] += hsvColour[0];
-				colourRange.sum[1] += hsvColour[1];
-				colourRange.sum[2] += hsvColour[2];
+				colourRange.sum[0] += bgrColour[0];
+				colourRange.sum[1] += bgrColour[1];
+				colourRange.sum[2] += bgrColour[2];
 
 				count++;
 		}
@@ -529,12 +560,15 @@ class DetermineChessPieces {
 
 				//cout << "Comp: " << toGrey(comp) << endl;
 				Point position = Point(square.x, square.y); 
-				if(toGrey(comp) < 50) {
+				if(isBrown(center, hull, analysis)) {
 					//BLACK
 					circle(frame, center, 10, Scalar(0, 75, 150), 3, LINE_4, 0);
 					positions.insertChessPiece(Black, position);
 				} else {
-					Vec3b hsvComp = toHSV(comp);
+					//WHITE
+					circle(frame, center, 10, Scalar(255, 255, 255), 3, LINE_4, 0);
+					positions.insertChessPiece(White, position);
+					/*Vec3b hsvComp = toHSV(comp);
 					cout << "HSV: " << hsvComp << endl;
 					if(((hsvComp[0] > 0 && hsvComp[0] < 15) || hsvComp[0] > 170) && hsvComp[2] < 100) {
 						cout << "Black: " << hsvComp << endl;
@@ -542,11 +576,9 @@ class DetermineChessPieces {
 						circle(frame, center, 10, Scalar(0, 75, 150), 3, LINE_4, 0);
 						positions.insertChessPiece(Black, position);
 					} else {
-						//WHITE
-						circle(frame, center, 10, Scalar(255, 255, 255), 3, LINE_4, 0);
-						positions.insertChessPiece(White, position);
 
-					}
+
+					}*/
 				}
 			}
 		}
@@ -558,6 +590,13 @@ class DetermineChessPieces {
 		positions.finishBoardUpdate();
 		//imshow("DETECTED EDGES: ", edges);
 		//waitKey(0);
+	}
+
+	bool isBrown(Point center, vector<Point>& hull, ColourAnalysis &analysis) {
+		MinMaxHSV res = analysis.contourColourAnalysis(center, hull, Vec3b(7, 200, 25), Vec3b(7, 55, 25));
+		float percentage = (float) res.colourTestCount / (float) res.colourTestTotalCount;
+		printf("COLOUR test count: %d vs %d for %d\n", res.colourTestCount, res.colourTestTotalCount, (int) (percentage * 100));
+		return percentage > 0.4;
 	}
 
 	Point findPointInPolygon(vector<Point> polygon) {

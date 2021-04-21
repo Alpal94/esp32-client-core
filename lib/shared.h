@@ -122,6 +122,11 @@ struct MinMaxHSV {
 	Vec3b min;
 	Vec3b max;
 	Vec3b average;
+	Vec3b colourTest;
+	Vec3b colourTestMargin;
+	bool testColour;
+	int colourTestCount;
+	int colourTestTotalCount;
 	int sum[3];
 	Vec3b comp;
 	unordered_map<string, int> hist;

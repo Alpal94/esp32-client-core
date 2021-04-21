@@ -1,4 +1,5 @@
 #include "lib/shared.h"
+#include "lib/fen-processor.h"
 #include "lib/determine-chessboard.h"
 #include "lib/determine-chess-peices.h"
 #include "lib/hand-detector.h"
@@ -752,9 +753,9 @@ class StreamProcessing {
 					//imshow (window_name, display_mat);
 					//Mat channels[3];
 					//split(display_mat, channels);
-					//cvtColor(display_mat, display_mat, COLOR_BGR2HSV);
+					cvtColor(display_mat, display_mat, COLOR_BGR2GRAY);
 					//threshold(channels[0], channels[0], 0, 255, THRESH_TOZERO);
-					//inRange(display_mat, Scalar(0,50,50), Scalar(15,255,255), mask);
+					//inRange(display_mat, Scalar(0,0,0), Scalar(15,100,100), mask);
 					//inRange(display_mat, Scalar(0, 0, 0), Scalar(0, 0, 0), mask2);
 					//inRange(display_mat, Scalar(0,50,50), Scalar(15,255,255), mask3);
 
