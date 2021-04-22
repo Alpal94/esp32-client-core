@@ -5,11 +5,13 @@ using namespace std;
 class FenProcessor {
 	public:
 	char* processFen(char* fenString) {
+		char cFenString[MAX_FEN];
+		strcpy(cFenString, fenString);
+
 		char *newChessBoard = (char *) malloc(65 * sizeof(char));
-			
 		strcpy(newChessBoard, "................................................................");
 			
-		char* board = strtok(fenString, " ");
+		char* board = strtok(cFenString, " ");
 		char* pieces = strtok(board, "/");
 		int rowIndex = 0;
 		while( pieces != NULL) {
@@ -64,6 +66,7 @@ class FenProcessor {
 
 		sections = strtok(NULL, " ");
 		char* turn = sections;
+		printf("TURN: %s vs %s vs %s\n", turn, sections, fenString);
 
 		/*sections = strtok(NULL, " ");
 		char* castling = checkCastling(chessBoard, move, sections);
@@ -116,8 +119,8 @@ class FenProcessor {
 			strcat(newFenString, row);
 		}
 
-		/*if(turn[0] == 'w') strcat(newFenString, " b ");
-		else strcat(newFenString, " w ");*/
+		if(turn[0] == 'w') strcat(newFenString, " b ");
+		else strcat(newFenString, " w ");
 
 		/*newFenString += castling + " ";
 		newFenString += enpassant + " ";
