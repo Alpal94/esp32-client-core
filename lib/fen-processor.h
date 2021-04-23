@@ -66,12 +66,11 @@ class FenProcessor {
 
 		sections = strtok(NULL, " ");
 		char* turn = sections;
-		printf("TURN: %s vs %s vs %s\n", turn, sections, fenString);
-
-		/*sections = strtok(NULL, " ");
-		char* castling = checkCastling(chessBoard, move, sections);
 
 		sections = strtok(NULL, " ");
+		char* castling = checkCastling(chessBoard, move, sections);
+
+		/*sections = strtok(NULL, " ");
 		char* enpassant = checkEnPassant(chessBoard, move);
 
 		sections = strtok(NULL, " ");
@@ -83,7 +82,7 @@ class FenProcessor {
 
 		chessBoard[endRowIndex + 8 * endColIndex] = chessBoard[startRowIndex + 8 * startColIndex];
 		chessBoard[startRowIndex + 8 * startColIndex] = '.';
-		//updateRookIfCastling(chessBoard, move);
+		updateRookIfCastling(chessBoard, move);
 		for(int i = 0; i < 8; i++) {
 			for(int j = 0; j < 8; j++) {
 				printf("%c", chessBoard[i + 8 * j]);
@@ -122,8 +121,8 @@ class FenProcessor {
 		if(turn[0] == 'w') strcat(newFenString, " b ");
 		else strcat(newFenString, " w ");
 
-		/*newFenString += castling + " ";
-		newFenString += enpassant + " ";
+		strcat(newFenString, castling);
+		/*newFenString += enpassant + " ";
 
 		//TODO: Half move update not implemented
 		newFenString += halfMove + " ";
@@ -209,50 +208,91 @@ class FenProcessor {
 		return cs;
 	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-	/*
-
-	static private int[][] updateRookIfCastling(int [][] chessBoard, String move) {
-		int [] moveIndexes = processMove(move);
+	char* checkCastling(char* chessBoard, char* move, char* castling) {
+		int* moveIndexes = processMove(move);
 		int startColIndex = moveIndexes[0];
 		int startRowIndex = moveIndexes[1];
 		int endColIndex = moveIndexes[2];
 		int endRowIndex = moveIndexes[3];
 
-		int peice = chessBoard[endRowIndex][endColIndex];
-		boolean blackWhite = peice == R.drawable.black_king ? true : false;
 
-		if(peice == R.drawable.white_king || peice == R.drawable.black_king) {
-			if(Math.abs(startColIndex - endColIndex) == 2) {
+		bool whiteKing = strstr(castling, "K") != NULL;
+		bool whiteQueen = strstr(castling, "Q") != NULL;
+		bool blackKing = strstr(castling, "k") != NULL;
+		bool blackQueen = strstr(castling, "q") != NULL;
+		char peice = chessBoard[startRowIndex + 8 * startColIndex];
+		if(peice == 'K') {
+			whiteKing = false;
+			whiteQueen = false;
+		} else if(peice == 'R') {
+			if(startColIndex == 7) whiteKing = false;
+			else if(startColIndex == 0) whiteQueen = false;
+		}
+
+		if(peice == 'k') {
+			blackKing = false;
+			blackQueen = false;
+		} else if(peice == 'r') {
+			if(startColIndex == 7) blackKing = false;
+			else if(startColIndex == 0) blackQueen = false;
+		}
+
+		char *newCastling = (char *) malloc(5 * sizeof(char));
+		strcpy(newCastling, "");
+		if(!whiteKing && !whiteQueen && !blackKing && !blackQueen) {
+			strcpy(newCastling, "-");
+			return newCastling;
+		}
+
+		if(whiteKing) strcat(newCastling, "K");
+		if(whiteQueen) strcat(newCastling, "Q");
+		if(blackKing) strcat(newCastling, "k");
+		if(blackQueen) strcat(newCastling, "q");
+		
+		return newCastling;
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+	char* updateRookIfCastling(char* chessBoard, char* move) {
+		int* moveIndexes = processMove(move);
+		int startColIndex = moveIndexes[0];
+		int startRowIndex = moveIndexes[1];
+		int endColIndex = moveIndexes[2];
+		int endRowIndex = moveIndexes[3];
+
+		char peice = chessBoard[endRowIndex + 8 * endColIndex];
+		bool blackWhite = peice == 'k' ? true : false;
+
+		if(peice == 'K' || peice == 'k') {
+			if(abs(startColIndex - endColIndex) == 2) {
 				//Castling
 				if(endColIndex > 4) {
 					//King side
 					if(blackWhite) {
-						chessBoard[startRowIndex][5] = R.drawable.black_rook;
-						chessBoard[startRowIndex][7] = 0;
+						chessBoard[startRowIndex + 8 * 5] = 'r';
+						chessBoard[startRowIndex + 8 * 7] = 0;
 					} else {
-						chessBoard[startRowIndex][5] = R.drawable.white_rook;
-						chessBoard[startRowIndex][7] = 0;
+						chessBoard[startRowIndex + 8 * 5] = 'R';
+						chessBoard[startRowIndex + 8 * 7] = 0;
 					}
 				} else {
 					//Queen side
 					if(blackWhite) {
-						chessBoard[startRowIndex][3] = R.drawable.black_rook;
-						chessBoard[startRowIndex][0] = 0;
+						chessBoard[startRowIndex + 8 * 3] = 'r';
+						chessBoard[startRowIndex + 8 * 0] = 0;
 					} else  {
-						chessBoard[startRowIndex][3] = R.drawable.white_rook;
-						chessBoard[startRowIndex][0] = 0;
+						chessBoard[startRowIndex + 8 * 3] = 'R';
+						chessBoard[startRowIndex + 8 * 0] = 0;
 					}
 				}
 
@@ -263,6 +303,7 @@ class FenProcessor {
 		return chessBoard;
 	}
 
+	/*
 	static private String calculateHalfMove(int[][] chessBoard, String move, String previousHalfMove) {
 		int [] moveIndexes = processMove(move);
 		int startColIndex = moveIndexes[0];
@@ -279,45 +320,7 @@ class FenProcessor {
 		return "0";
 	}
 
-	static private String checkCastling(int[][] chessBoard, String move, String castling) {
-		int [] moveIndexes = processMove(move);
-		int startColIndex = moveIndexes[0];
-		int startRowIndex = moveIndexes[1];
-		int endColIndex = moveIndexes[2];
-		int endRowIndex = moveIndexes[3];
 
-
-		boolean whiteKing = castling.contains("K");
-		boolean whiteQueen = castling.contains("Q");
-		boolean blackKing = castling.contains("k");
-		boolean blackQueen = castling.contains("q");
-		int peice = chessBoard[startRowIndex][startColIndex];
-		if(peice == R.drawable.white_king) {
-			whiteKing = false;
-			whiteQueen = false;
-		} else if(peice == R.drawable.white_rook) {
-			if(startColIndex == 7) whiteKing = false;
-			else if(startColIndex == 0) whiteQueen = false;
-		}
-
-		if(peice == R.drawable.black_king) {
-			blackKing = false;
-			blackQueen = false;
-		} else if(peice == R.drawable.black_rook) {
-			if(startColIndex == 7) blackKing = false;
-			else if(startColIndex == 0) blackQueen = false;
-		}
-
-		String newCastling = "";
-		if(!whiteKing && !whiteQueen && !blackKing && !blackQueen) return "-";
-
-		if(whiteKing) newCastling += "K";
-		if(whiteQueen) newCastling += "Q";
-		if(blackKing) newCastling += "k";
-		if(blackQueen) newCastling += "q";
-		
-		return newCastling;
-	}
 
 	static private String checkEnPassant(int[][] chessBoard, String move) {
 		int [] moveIndexes = processMove(move);
