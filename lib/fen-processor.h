@@ -70,10 +70,10 @@ class FenProcessor {
 		sections = strtok(NULL, " ");
 		char* castling = checkCastling(chessBoard, move, sections);
 
-		/*sections = strtok(NULL, " ");
+		sections = strtok(NULL, " ");
 		char* enpassant = checkEnPassant(chessBoard, move);
 
-		sections = strtok(NULL, " ");
+		/*sections = strtok(NULL, " ");
 		char* halfMove = calculateHalfMove(chessBoard, move, sections);
 
 		sections = strtok(NULL, " ");
@@ -122,10 +122,12 @@ class FenProcessor {
 		else strcat(newFenString, " w ");
 
 		strcat(newFenString, castling);
-		/*newFenString += enpassant + " ";
+		strcat(newFenString, " ");
+		strcat(newFenString, enpassant);
+		strcat(newFenString, " ");
 
 		//TODO: Half move update not implemented
-		newFenString += halfMove + " ";
+		/*newFenString += halfMove + " ";
 
 		if(turn.charAt(0) == 'b') newFenString += String.valueOf(Integer.parseInt(fullMove) + 1);
 		else newFenString += fullMove;*/
@@ -303,6 +305,37 @@ class FenProcessor {
 		return chessBoard;
 	}
 
+	char* checkEnPassant(char* chessBoard, char* move) {
+		int* moveIndexes = processMove(move);
+		int startColIndex = moveIndexes[0];
+		int startRowIndex = moveIndexes[1];
+		int endColIndex = moveIndexes[2];
+		int endRowIndex = moveIndexes[3];
+		char *enpassant = (char*) malloc(4 * sizeof(char));
+		strcpy(enpassant, "..");
+
+		char peice = chessBoard[startRowIndex + 8 * startColIndex];
+
+		if(peice == 'P' || peice == 'p') {
+			if(startRowIndex == 1 || startRowIndex == 6) {
+				if(abs(startRowIndex - endRowIndex) == 2) {
+					enpassant[0] = move[2];
+					if(startRowIndex == 1) {
+						enpassant[1] = '6';
+						return enpassant;
+					}
+					if(startRowIndex == 6) {
+						enpassant[1] = '3';
+						return enpassant;
+					}
+				}
+			}
+		}
+
+		strcpy(enpassant, "-");
+		return enpassant;
+	}
+
 	/*
 	static private String calculateHalfMove(int[][] chessBoard, String move, String previousHalfMove) {
 		int [] moveIndexes = processMove(move);
@@ -321,27 +354,6 @@ class FenProcessor {
 	}
 
 
-
-	static private String checkEnPassant(int[][] chessBoard, String move) {
-		int [] moveIndexes = processMove(move);
-		int startColIndex = moveIndexes[0];
-		int startRowIndex = moveIndexes[1];
-		int endColIndex = moveIndexes[2];
-		int endRowIndex = moveIndexes[3];
-
-		int peice = chessBoard[startRowIndex][startColIndex];
-
-		if(peice == R.drawable.white_pawn || peice == R.drawable.black_pawn) {
-			if(startRowIndex == 1 || startRowIndex == 6) {
-				if(Math.abs(startRowIndex - endRowIndex) == 2) {
-					if(startRowIndex == 1) return move.substring(2,3) + "6";
-					if(startRowIndex == 6) return move.substring(2,3) + "3";
-				}
-			}
-		}
-
-		return "-";
-	}
 
 	static private int charToPiece(char piece) {
 		switch(piece) {
