@@ -73,11 +73,11 @@ class FenProcessor {
 		sections = strtok(NULL, " ");
 		char* enpassant = checkEnPassant(chessBoard, move);
 
-		/*sections = strtok(NULL, " ");
+		sections = strtok(NULL, " ");
 		char* halfMove = calculateHalfMove(chessBoard, move, sections);
 
 		sections = strtok(NULL, " ");
-		char* fullMove = sections;*/
+		char* fullMove = sections;
 
 
 		chessBoard[endRowIndex + 8 * endColIndex] = chessBoard[startRowIndex + 8 * startColIndex];
@@ -125,12 +125,13 @@ class FenProcessor {
 		strcat(newFenString, " ");
 		strcat(newFenString, enpassant);
 		strcat(newFenString, " ");
+		strcat(newFenString, halfMove);
 
-		//TODO: Half move update not implemented
-		/*newFenString += halfMove + " ";
-
-		if(turn.charAt(0) == 'b') newFenString += String.valueOf(Integer.parseInt(fullMove) + 1);
-		else newFenString += fullMove;*/
+		char *newFullMove = (char *) malloc(5 * sizeof(char));
+		strcpy(newFullMove, "");
+		sprintf(newFullMove, " %d ", atoi(fullMove) + 1);
+		if(turn[0] == 'b') strcat(newFenString, newFullMove);
+		else strcat(newFenString, fullMove);
 
 		return newFenString;
 
@@ -204,7 +205,7 @@ class FenProcessor {
 	}
 
 	char* charToStr(char c) {
-		char* cs = (char *) malloc(2 * sizeof(int));
+		char* cs = (char *) malloc(2 * sizeof(char));
 		strcpy(cs, " ");
 		cs[0] = c;
 		return cs;
@@ -253,17 +254,6 @@ class FenProcessor {
 		
 		return newCastling;
 	}
-
-
-
-
-
-
-
-
-
-
-
 
 	char* updateRookIfCastling(char* chessBoard, char* move) {
 		int* moveIndexes = processMove(move);
@@ -336,25 +326,29 @@ class FenProcessor {
 		return enpassant;
 	}
 
-	/*
-	static private String calculateHalfMove(int[][] chessBoard, String move, String previousHalfMove) {
-		int [] moveIndexes = processMove(move);
+	char* calculateHalfMove(char* chessBoard, char* move, char* previousHalfMove) {
+		int* moveIndexes = processMove(move);
 		int startColIndex = moveIndexes[0];
 		int startRowIndex = moveIndexes[1];
 		int endColIndex = moveIndexes[2];
 		int endRowIndex = moveIndexes[3];
 
-		boolean capture = chessBoard[endRowIndex][endColIndex] == 0;
-		boolean pawn = chessBoard[startRowIndex][startColIndex] == R.drawable.white_pawn || chessBoard[startRowIndex][startColIndex] == R.drawable.black_pawn;
+		bool capture = chessBoard[endRowIndex + 8 * endColIndex] == 0;
+		bool pawn = chessBoard[startRowIndex + 8 * startColIndex] == 'p' || chessBoard[startRowIndex + 8 * startColIndex] == 'P';
 			
+		char* halfMove = (char *) malloc(8 * sizeof(char));
+		strcpy(halfMove, "");
 		if(capture && !pawn) {
-			return String.valueOf(Integer.parseInt(previousHalfMove)+1);
+			sprintf(halfMove, "%d", (atoi(previousHalfMove)+1)); 
+			return halfMove;
 		}
-		return "0";
+		strcpy(halfMove, "0");
+		return halfMove;
 	}
 
 
 
+	/*
 	static private int charToPiece(char piece) {
 		switch(piece) {
 			case 'R': return R.drawable.white_rook;
