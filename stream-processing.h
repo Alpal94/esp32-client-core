@@ -5,6 +5,7 @@
 #include "lib/hand-detector.h"
 #include "lib/calibrate-camera.h"
 #include "lib/hsv-experiment.h"
+#include "lib/stockfish.h"
 
 #define PRINT_LINES false
 #define PRINT_HOUGH_LINES false
@@ -672,9 +673,19 @@ class StreamProcessing {
 
 		if(HSV_EXPERIMENT) hsv_init();
 		traversalState = TraversalState::Forward;
+
+		Stockfish stockfish;
+
+		stockfish.readResult();
+		stockfish.writeResult();
+		stockfish.readResult();
+		stockfish.writeFen("position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1\n");
+		sleep(1);
+		stockfish.readResult();
 			
 	}
 	void processFrame() {
+		return;
 		if(!CALIBRATE) {
 
 			/*cv::cvtColor(lastFrame, lastFrame, COLOR_BGR2YUV);
