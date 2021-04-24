@@ -4,48 +4,14 @@ using namespace std;
 
 class FenProcessor {
 	public:
-	char* processFen(char* fenString) {
-		char cFenString[MAX_FEN];
-		strcpy(cFenString, fenString);
-
-		char *newChessBoard = (char *) malloc(65 * sizeof(char));
-		strcpy(newChessBoard, "................................................................");
-			
-		char* board = strtok(cFenString, " ");
-		char* pieces = strtok(board, "/");
-		int rowIndex = 0;
-		while( pieces != NULL) {
-			int pieceIndex = 0;
-			for(int index = 0; index < strlen(pieces); index++) {
-				char piece = pieces[index];
-				newChessBoard[rowIndex + 8 * pieceIndex] = charToPiece(piece);
-				pieceIndex += charToSpacing(piece); //If piece index is 8 or greater program should auto terminate.  Not checked so watch this line
-			}
-			rowIndex++;
-			pieces = strtok(NULL, "/");
-		}
-		return newChessBoard;
+	char* getFen() {
+		return fenBoard;
 	}
-
-	int charToPiece(char piece) {
-		switch(piece) {
-			case 'R': return piece;
-			case 'N': return piece;
-			case 'B': return piece;
-			case 'Q': return piece;
-			case 'K': return piece;
-			case 'P': return piece;
-			case 'r': return piece;
-			case 'n': return piece;
-			case 'b': return piece;
-			case 'q': return piece;
-			case 'k': return piece;
-			case 'p': return piece;
-			default: return '.';
-		}
+	void setFen(char* fen) {
+		fenBoard = fen;
 	}
-
-	char* updateFen(char* fenString, char* move) {
+	void updateFen(char* move) {
+		char* fenString = fenBoard;
 		char* chessBoard = processFen(fenString);
 		for(int i = 0; i < 8; i++) {
 			for(int j = 0; j < 8; j++) {
@@ -133,11 +99,68 @@ class FenProcessor {
 		if(turn[0] == 'b') strcat(newFenString, newFullMove);
 		else strcat(newFenString, fullMove);
 
-		return newFenString;
-
+		fenBoard = newFenString;
 	}
 
+	char* indexToMove(int oldX, int oldY, int newX, int newY) {
+		char * move = (char *) malloc(5 * sizeof(char));
+		strcpy(move, "....");
+		move[0] = rowIndexToChar(oldX + 1);
+		move[1] = indexToChar(8 - oldY);
+		move[2] = rowIndexToChar(newX + 1);
+		move[3] = indexToChar(8 - newY);
+		return move;
+	}
+
+	FenProcessor() {
+		init();
+	}
 	private:
+	char* fenBoard;
+	void init() {
+		fenBoard = (char*) malloc(MAX_FEN * sizeof(char));
+		strcpy(fenBoard, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	}
+	char* processFen(char* fenString) {
+		char cFenString[MAX_FEN];
+		strcpy(cFenString, fenString);
+
+		char *newChessBoard = (char *) malloc(65 * sizeof(char));
+		strcpy(newChessBoard, "................................................................");
+			
+		char* board = strtok(cFenString, " ");
+		char* pieces = strtok(board, "/");
+		int rowIndex = 0;
+		while( pieces != NULL) {
+			int pieceIndex = 0;
+			for(int index = 0; index < strlen(pieces); index++) {
+				char piece = pieces[index];
+				newChessBoard[rowIndex + 8 * pieceIndex] = charToPiece(piece);
+				pieceIndex += charToSpacing(piece); //If piece index is 8 or greater program should auto terminate.  Not checked so watch this line
+			}
+			rowIndex++;
+			pieces = strtok(NULL, "/");
+		}
+		return newChessBoard;
+	}
+	int charToPiece(char piece) {
+		switch(piece) {
+			case 'R': return piece;
+			case 'N': return piece;
+			case 'B': return piece;
+			case 'Q': return piece;
+			case 'K': return piece;
+			case 'P': return piece;
+			case 'r': return piece;
+			case 'n': return piece;
+			case 'b': return piece;
+			case 'q': return piece;
+			case 'k': return piece;
+			case 'p': return piece;
+			default: return '.';
+		}
+	}
+
 	int charToSpacing(char piece) {
 		switch(piece) {
 			case '2': return 2;
@@ -200,7 +223,21 @@ class FenProcessor {
 			case 6: return '6';
 			case 7: return '7';
 			case 8: return '8';
-			default: return '0';
+			default: return 0;
+		}
+	}
+
+	char rowIndexToChar(int piece) {
+		switch(piece) {
+			case 1: return 'a';
+			case 2: return 'b';
+			case 3: return 'c';
+			case 4: return 'd';
+			case 5: return 'e';
+			case 6: return 'f';
+			case 7: return 'g';
+			case 8: return 'h';
+			default: return 0;
 		}
 	}
 
@@ -345,48 +382,4 @@ class FenProcessor {
 		strcpy(halfMove, "0");
 		return halfMove;
 	}
-
-
-
-	/*
-	static private int charToPiece(char piece) {
-		switch(piece) {
-			case 'R': return R.drawable.white_rook;
-			case 'N': return R.drawable.white_knight;
-			case 'B': return R.drawable.white_bishop;
-			case 'Q': return R.drawable.white_queen;
-			case 'K': return R.drawable.white_king;
-			case 'P': return R.drawable.white_pawn;
-			case 'r': return R.drawable.black_rook;
-			case 'n': return R.drawable.black_knight;
-			case 'b': return R.drawable.black_bishop;
-			case 'q': return R.drawable.black_queen;
-			case 'k': return R.drawable.black_king;
-			case 'p': return R.drawable.black_pawn;
-			default: return 0;
-		}
-	}
-
-
-
-
-	static private char pieceToChar(int piece) {
-		switch(piece) {
-			case R.drawable.white_rook: return 'R';
-			case R.drawable.white_knight: return 'N';
-			case R.drawable.white_bishop: return 'B';
-			case R.drawable.white_queen: return 'Q';
-			case R.drawable.white_king: return 'K';
-			case R.drawable.white_pawn: return 'P';
-			case R.drawable.black_rook: return 'r';
-			case R.drawable.black_knight: return 'n';
-			case R.drawable.black_bishop: return 'b';
-			case R.drawable.black_queen: return 'q';
-			case R.drawable.black_king: return 'k';
-			case R.drawable.black_pawn: return 'p';
-			default: return '0';
-		}
-	}
-
-*/
 };

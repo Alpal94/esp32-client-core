@@ -35,10 +35,7 @@ class Positions {
 		updating = false;
 		printBoard();
 		
-		char fenString[] = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
-		char move[] = "c7c5";
-		char* newFen = fen.updateFen(fenString, move);
-		printf("NEW FEN: %s\n", newFen);
+		printf("NEW FEN: %s\n", fen.getFen());
 	}
 	
 	void resolveBoardUpdate() {
@@ -61,6 +58,11 @@ class Positions {
 		}
 		if(stateChange) {
 			turns++;
+			if(previous.x != newPos.x || previous.y != newPos.y) {
+				char *move = fen.indexToMove(previous.x, previous.y, newPos.x, newPos.y);
+				printf("UPDATING FEN: %s for %d %d %d %d\n", move, previous.x, previous.y, newPos.x, newPos.y);
+				fen.updateFen(move);
+			}
 			board[newPos.x][newPos.y].type = oldBoard[previous.x][previous.y].type;
 		}
 	}
