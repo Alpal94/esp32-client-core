@@ -32,6 +32,7 @@ class StreamProcessing {
 	DetermineChessBoard determineChessboard;
 	DetermineChessPieces determineChessPieces;
 	HandDetector handDetector;
+	Stockfish stockfish;
 
 	enum TraversalState { Left, Right, Up, Down, Forward, Back } traversalState;
 	RobotPosition robotPosition = { .x = 18, .y = 10, .z = -5};
@@ -250,6 +251,18 @@ class StreamProcessing {
 					localSquareList,
 					globalSquareList
 				);
+
+				char *fenBoard = determineChessPieces.getFenBoard();
+				bool isRobotsMove = determineChessPieces.getIsRobotsMove();
+				if(isRobotsMove) {
+					stockfish.startFenCalc(fenBoard);
+					sleep(1);
+					stockfish.stopCalc();
+					char* bestMove = stockfish.readBestMove();
+					printf("Processed best move: %s\n", bestMove);
+				} else {
+					printf("Not robots move\n");
+				}
 
 				/*robotPosition = traverseChessboard(robotPosition);
 				MinMaxHSV blackSquare = determineChessPieces.getSquareColour(0);
@@ -670,22 +683,10 @@ class StreamProcessing {
 
 	public:
 	StreamProcessing() {
-
 		if(HSV_EXPERIMENT) hsv_init();
 		traversalState = TraversalState::Forward;
-
-		Stockfish stockfish;
-
-		stockfish.readResult();
-		stockfish.writeResult();
-		stockfish.readResult();
-		stockfish.writeFen("position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1\n");
-		sleep(1);
-		stockfish.readResult();
-			
 	}
 	void processFrame() {
-		return;
 		if(!CALIBRATE) {
 
 			/*cv::cvtColor(lastFrame, lastFrame, COLOR_BGR2YUV);

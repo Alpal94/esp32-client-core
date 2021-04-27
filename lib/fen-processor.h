@@ -3,6 +3,9 @@ using namespace std;
 #define MAX_FEN 128
 
 class FenProcessor {
+	private:
+	char* fenBoard;
+
 	public:
 	char* getFen() {
 		return fenBoard;
@@ -102,6 +105,16 @@ class FenProcessor {
 		fenBoard = newFenString;
 	}
 
+	char getColourToMove() {
+		char fenString[MAX_FEN] = ""; 
+		strcpy(fenString, fenBoard);
+		char* sections = strtok(fenString, " ");
+
+		sections = strtok(NULL, " ");
+		char* turn = sections;
+		return turn[0];
+	}
+
 	char* indexToMove(int oldX, int oldY, int newX, int newY) {
 		char * move = (char *) malloc(5 * sizeof(char));
 		strcpy(move, "....");
@@ -116,7 +129,6 @@ class FenProcessor {
 		init();
 	}
 	private:
-	char* fenBoard;
 	void init() {
 		fenBoard = (char*) malloc(MAX_FEN * sizeof(char));
 		strcpy(fenBoard, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");

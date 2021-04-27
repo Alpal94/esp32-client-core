@@ -15,6 +15,7 @@ class Positions {
 
 	int turns;
 	bool updating;
+	bool fenUpdated;
 
 	public:
 	Positions() {
@@ -37,7 +38,7 @@ class Positions {
 		
 		printf("NEW FEN: %s\n", fen.getFen());
 	}
-	
+
 	void resolveBoardUpdate() {
 		if(turns == 0) return initBoard();
 		bool stateChange;
@@ -61,10 +62,23 @@ class Positions {
 			if(previous.x != newPos.x || previous.y != newPos.y) {
 				char *move = fen.indexToMove(previous.x, previous.y, newPos.x, newPos.y);
 				printf("UPDATING FEN: %s for %d %d %d %d\n", move, previous.x, previous.y, newPos.x, newPos.y);
+				fenUpdated = true;
 				fen.updateFen(move);
 			}
 			board[newPos.x][newPos.y].type = oldBoard[previous.x][previous.y].type;
 		}
+	}
+
+	char* getFenBoard() {
+		return fen.getFen();
+	}
+
+	bool getIsRobotsMove() {
+		if(fenUpdated && fen.getColourToMove() == 'b') {
+			fenUpdated = false;
+			return true;
+		}
+		return false;
 	}
 
 	void printBoard() {
@@ -439,6 +453,14 @@ class DetermineChessPieces {
 	MinMaxHSV getSquareColour(bool blackWhite) {
 		return squareColour[blackWhite];
 	}	
+
+	char* getFenBoard() {
+		return positions.getFenBoard();
+	}
+
+	bool getIsRobotsMove() {
+		return positions.getIsRobotsMove();
+	}
 
 	private:
 	struct SquareInfo {
