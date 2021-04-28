@@ -34,6 +34,7 @@ class StreamProcessing {
 	DetermineChessPieces determineChessPieces;
 	HandDetector handDetector;
 	Stockfish stockfish;
+	RobotMove robotMove;
 
 	enum TraversalState { Left, Right, Up, Down, Forward, Back } traversalState;
 	RobotPosition robotPosition = { .x = 18, .y = 10, .z = -5};
@@ -260,10 +261,12 @@ class StreamProcessing {
 					sleep(1);
 					stockfish.stopCalc();
 					char* bestMove = stockfish.readBestMove();
-					printf("Processed best move: %s\n", bestMove);
+					robotMove.processRobotMove(bestMove, localSquareList);
 				} else {
 					printf("Not robots move\n");
 				}
+
+
 
 				/*robotPosition = traverseChessboard(robotPosition);
 				MinMaxHSV blackSquare = determineChessPieces.getSquareColour(0);

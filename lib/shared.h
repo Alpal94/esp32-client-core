@@ -18,7 +18,6 @@
 
 #define OVERSIZED_BOARD 16
 
-
 #ifdef FOR_ANDROID
 	#include <android/log.h>
 	#define  LOG_TAG    "ESP32Client"
@@ -111,12 +110,6 @@ struct RobotPosition {
 	float z;
 };
 
-struct ChessboardToCamera {
-	bool calced;
-	float distance;
-	float squareWidth;
-};
-
 struct MinMaxHSV {
 	Vec3b min;
 	Vec3b max;
@@ -193,14 +186,6 @@ double pixelDist( Point pt1, Point pt2 )
 	double dx = pt1.x - pt2.x;
 	double dy = pt1.y - pt2.y;
 	return sqrt(dx * dx + dy * dy);
-}
-
-double distance( RobotPosition p1, RobotPosition p2 )
-{
-	double dx = p1.x - p2.x;
-	double dy = p1.y - p2.y;
-	double dz = p1.z - p2.z;
-	return sqrt(dx * dx + dy * dy + dz * dz);
 }
 
 FPoint locateIntercept(LineMetadata first_line, LineMetadata second_line, bool bounded=false) {

@@ -5,6 +5,12 @@ using namespace std;
 
 class RobotMove {
 	private:
+	struct ChessboardToCamera {
+		bool calced;
+		float distance;
+		float squareWidth;
+	};
+
 	RobotPosition defaultPosition = { .x = 18, .y = 10, .z = -5};
 	RobotPosition robotPosition = defaultPosition;
 	RobotPosition currRobotPosition;
@@ -12,12 +18,24 @@ class RobotMove {
 	ChessboardToCamera chessboardToCamera;
 
 	public:
-	RobotMove() { init(); }
+	bool processRobotMove(char *move, vector<Square>& squareList) {
+		if(squareList.size() != 64) return false;
+		for(int i = 0; i < squareList.size(); i++) {
+			int r = i / 8;
+			int c = i % 8;
 
-	private:
-	void init() {
+			Square square = squareList[i];
+			printf("Spacing: %f\n", square.spacing);
+		}
+
+
+
+
+
+		return true;
 	}
 
+	private:
 	bool setRobotPosition(RobotPosition _position) {
 		CURL *curl;
 		CURLcode res;
@@ -72,4 +90,14 @@ class RobotMove {
 		return false;
 
 	}
+
+	double distance( RobotPosition p1, RobotPosition p2 )
+	{
+		double dx = p1.x - p2.x;
+		double dy = p1.y - p2.y;
+		double dz = p1.z - p2.z;
+		return sqrt(dx * dx + dy * dy + dz * dz);
+	}
+
+
 };

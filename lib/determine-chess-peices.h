@@ -72,7 +72,7 @@ class Positions {
 	}
 
 	bool getIsRobotsMove() {
-		if(fen.getColourToMove() == 'b') return true;
+		if(fen.getColourToMove() == 'w') return true;
 		return false;
 	}
 
