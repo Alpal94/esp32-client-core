@@ -15,7 +15,6 @@ class Positions {
 
 	int turns;
 	bool updating;
-	bool fenUpdated;
 
 	public:
 	Positions() {
@@ -62,7 +61,6 @@ class Positions {
 			if(previous.x != newPos.x || previous.y != newPos.y) {
 				char *move = fen.indexToMove(previous.x, previous.y, newPos.x, newPos.y);
 				printf("UPDATING FEN: %s for %d %d %d %d\n", move, previous.x, previous.y, newPos.x, newPos.y);
-				fenUpdated = true;
 				fen.updateFen(move);
 			}
 			board[newPos.x][newPos.y].type = oldBoard[previous.x][previous.y].type;
@@ -74,10 +72,7 @@ class Positions {
 	}
 
 	bool getIsRobotsMove() {
-		if(fenUpdated && fen.getColourToMove() == 'b') {
-			fenUpdated = false;
-			return true;
-		}
+		if(fen.getColourToMove() == 'b') return true;
 		return false;
 	}
 
