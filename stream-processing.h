@@ -6,6 +6,7 @@
 #include "lib/calibrate-camera.h"
 #include "lib/hsv-experiment.h"
 #include "lib/stockfish.h"
+#include "lib/robot-move.h"
 
 #define PRINT_LINES false
 #define PRINT_HOUGH_LINES false

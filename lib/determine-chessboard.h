@@ -7,13 +7,9 @@ using namespace std;
 class DetermineChessBoard {
 	private:	
 	vector<Point> squareIntercepts;
-	RobotPosition currRobotPosition;
-	RobotPosition originalRobotPosition;
-	ChessboardToCamera chessboardToCamera;
 
 	Square squareMap[OVERSIZED_BOARD][OVERSIZED_BOARD] = {};
 	Square localSquareMap[OVERSIZED_BOARD][OVERSIZED_BOARD] = {};
-
 
 	bool squareColourDetermined = false;
 	Vec3b blackSquareColour;
@@ -23,7 +19,6 @@ class DetermineChessBoard {
 	void findChessboardSquares(vector<LineMetadata> &mergedLines, vector<vector<Point> >& squares, Mat _gray_lastFrame, Mat &_lastFrame, Mat &_display, RobotPosition _robotPosition) {
 
 		vector<vector<Point> > drawing;
-		currRobotPosition = _robotPosition;
 
 		squareIntercepts.clear();
 		sort(mergedLines.begin(), mergedLines.end(), sortLinesGradient);
@@ -371,34 +366,6 @@ class DetermineChessBoard {
 	}
 
 	private:	
-	bool calculateChessboardCamera() {
-		if(
-				distance(originalRobotPosition, currRobotPosition) > 10 &&
-				abs(originalRobotPosition.z - currRobotPosition.z) == 0.0 &&
-				(mapOffset.north > 20 || mapOffset.west > 20)	) {
-			double dy = abs(originalRobotPosition.y - currRobotPosition.y);
-			double dx = abs(originalRobotPosition.x - currRobotPosition.x);
-
-			double realPixelDistance = mapOffset.north > mapOffset.west ? 
-				dy / mapOffset.north : dx / mapOffset.west;
-
-			float squareWidth = realPixelDistance;
-			float distance = calcRealDist(realPixelDistance);
-			
-			chessboardToCamera.calced = true;
-			chessboardToCamera.distance = distance;
-			chessboardToCamera.squareWidth = squareWidth;
-			return true;
-		}
-		return false;
-
-	}
-
-	float calcRealDist(float realSquareWidth) {
-		float fieldWidth = realSquareWidth * 160;
-		return fieldWidth / CAM_RATIO;
-	}
-
 	void asciiPrintBoard(Square (*_localSquareMap)[OVERSIZED_BOARD][OVERSIZED_BOARD], Mat &_lastFrame) {
 		printf("Ascii Board: _\n");
 		printf("_\n");
