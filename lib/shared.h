@@ -18,7 +18,6 @@
 
 #define OVERSIZED_BOARD 16
 
-#define CAM_RATIO 0.75f // fieldWidth / distance ==> 15cm / 20cm
 
 #ifdef FOR_ANDROID
 	#include <android/log.h>
