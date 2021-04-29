@@ -1,7 +1,10 @@
 using namespace cv;
 using namespace std;
+// OLD fieldWidth / distance ==> 15cm / 20cm
 
-#define CAM_RATIO 0.75f // fieldWidth / distance ==> 15cm / 20cm
+#define CAM_RATIO 3.26f // fieldWidth / distance ==> 65.18cm / 20cm
+#define SQUARE_WIDTH_CM 3.306f
+#define CAMERA_TO_CLAW_OFFSET 3.00f
 
 class RobotMove {
 	private:
@@ -16,26 +19,59 @@ class RobotMove {
 	RobotPosition currRobotPosition;
 	RobotPosition originalRobotPosition;
 	ChessboardToCamera chessboardToCamera;
+	FenProcessor fen;
 
 	public:
 	bool processRobotMove(char *move, vector<Square>& squareList) {
 		if(squareList.size() != 64) return false;
-		for(int i = 0; i < squareList.size(); i++) {
-			int r = i / 8;
-			int c = i % 8;
-
-			Square square = squareList[i];
-			printf("Spacing: %f\n", square.spacing);
+		float spacingCenter = 0;
+		FPoint boardCenter;
+		for(int r = 3; r <= 4; r++) {
+			for(int c = 3; c <= 4; c++) {
+				Square square = squareList[r + c * 8];
+				square = rotateSquare(square, { .rotation = square.rotation });
+				FPoint boardCenter = calcCenterFromMiddleForSquares(r, c, square);
+				spacingCenter += square.spacing;
+			}
 		}
+		spacingCenter /= 4;
 
+		float pixelDistanceRatio = calcPixelDistanceRatio(spacingCenter, SQUARE_WIDTH_CM);
+		float height = cameraHeightFromFieldWidth(pixelDistanceRatio);
 
+		FPoint pixelCamCenterToBoardCenter = {
+			.x = COLS / 2 - boardCenter.x,
+			.y = ROWS / 2 - boardCenter.y
+		};
+		int *processedMove = fen.processMove(move);
 
-
+		printf("Calculated HEIGHT: %f for fieldWidth: %f\n", height, pixelDistanceRatio * COLS);
+		printf("Calculated board offset: %f %f\n", pixelCamCenterToBoardCenter.x, pixelCamCenterToBoardCenter.y);
 
 		return true;
 	}
 
 	private:
+	FPoint calcCenterFromMiddleForSquares(int r, int c, Square square) {
+		if(r == 3 && c == 3) {
+			printf("SQUARE POS: %f %f\n", square.northEast.x, square.northEast.y);
+			return square.northEast;
+		} else if(r == 3 && c == 4) {
+			printf("SQUARE POS: %f %f\n", square.northWest.x, square.northWest.y);
+			return square.northWest;
+		} else if(r == 4 && c == 4) {
+			printf("SQUARE POS: %f %f\n", square.southWest.x, square.southWest.y);
+			return square.southWest;
+		} else if(r == 4 && c == 3) {
+			printf("SQUARE POS: %f %f\n", square.southEast.x, square.southEast.y);
+			return square.southEast;
+		}
+
+		return {
+			.x = 0,
+			.y = 0
+		};
+	}
 	bool setRobotPosition(RobotPosition _position) {
 		CURL *curl;
 		CURLcode res;
@@ -63,8 +99,12 @@ class RobotMove {
 		return false;
 	}
 
-	float calcRealDist(float realSquareWidth) {
-		float fieldWidth = realSquareWidth * 160;
+	float calcPixelDistanceRatio(float pixelDist, float realDist) {
+		return realDist / pixelDist;
+	}
+
+	float cameraHeightFromFieldWidth(float pixelDistanceRatio) {
+		float fieldWidth = pixelDistanceRatio * COLS;
 		return fieldWidth / CAM_RATIO;
 	}
 
@@ -80,7 +120,7 @@ class RobotMove {
 				dy / mapOffset.north : dx / mapOffset.west;
 
 			float squareWidth = realPixelDistance;
-			float distance = calcRealDist(realPixelDistance);
+			float distance = cameraHeightFromFieldWidth(realPixelDistance);
 			
 			chessboardToCamera.calced = true;
 			chessboardToCamera.distance = distance;

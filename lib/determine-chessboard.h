@@ -315,6 +315,9 @@ class DetermineChessBoard {
 				}
 			}
 
+			//890.361450 549.599670
+			printMarker(Point(885, 557), 10, _lastFrame);
+			printMarker(Point(COLS / 2, ROWS / 2), 10, _lastFrame);
 			//printSquare(squareList[i], _lastFrame);
 			lastSquareIndex = i;
 			insertSquare(&localSquareMap, posX, posY, squareList[i], { .spacing = 0, .rotation = -squareList[i].rotation, .north = 0, .west = 0 }, Point(0,0), _lastFrame, true);

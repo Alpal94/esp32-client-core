@@ -125,6 +125,19 @@ class FenProcessor {
 		return move;
 	}
 
+	int* processMove(char* move) {
+		int startColIndex = charToIndex(move[0]);
+		int startRowIndex = 7-charToIndex(move[1]);
+		int endColIndex = charToIndex(move[2]);
+		int endRowIndex = 7-charToIndex(move[3]);
+		printf("MOVES: %d,%d %d,%d\n", startColIndex, startRowIndex, endColIndex, endRowIndex);
+
+		int* moves = (int*) malloc(4 * sizeof(int));
+		moves[0] = startColIndex; moves[1] = startRowIndex; 
+		moves[2] = endColIndex; moves[3] = endRowIndex; 
+		return moves;
+	}
+
 	FenProcessor() {
 		init();
 	}
@@ -185,19 +198,6 @@ class FenProcessor {
 
 			default: return 1;
 		}
-	}
-
-	int* processMove(char* move) {
-		int startColIndex = charToIndex(move[0]);
-		int startRowIndex = 7-charToIndex(move[1]);
-		int endColIndex = charToIndex(move[2]);
-		int endRowIndex = 7-charToIndex(move[3]);
-		printf("MOVES: %d,%d %d,%d\n", startColIndex, startRowIndex, endColIndex, endRowIndex);
-
-		int* moves = (int*) malloc(4 * sizeof(int));
-		moves[0] = startColIndex; moves[1] = startRowIndex; 
-		moves[2] = endColIndex; moves[3] = endRowIndex; 
-		return moves;
 	}
 
 	int charToIndex(char col) {

@@ -253,6 +253,7 @@ class StreamProcessing {
 					localSquareList,
 					globalSquareList
 				);
+				printf("FINISHED BOARD CALC\n");
 
 				char *fenBoard = determineChessPieces.getFenBoard();
 				bool isRobotsMove = determineChessPieces.getIsRobotsMove();
