@@ -45,6 +45,15 @@ class RobotMove {
 		};
 		int *processedMove = fen.processMove(move);
 
+		Square from = squareList[processedMove[0] + 8 * processedMove[1]];
+		from = rotateSquare(from, { .rotation = from.rotation });
+
+		Square to = squareList[processedMove[2] + 8 * processedMove[3]];
+		to = rotateSquare(to, { .rotation = to.rotation });
+
+		printf("Center from: %f %f Center to: %f %f\n", from.center.x, from.center.y, to.center.x, to.center.y);
+
+		printf("Proposed move: %s\n", move);
 		printf("Calculated HEIGHT: %f for fieldWidth: %f\n", height, pixelDistanceRatio * COLS);
 		printf("Calculated board offset: %f %f\n", pixelCamCenterToBoardCenter.x, pixelCamCenterToBoardCenter.y);
 

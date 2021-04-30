@@ -33,9 +33,9 @@ class Stockfish {
 		while(read(output[0], buffer, BUFSIZ) > 0) {
 			char *bestMove = strstr(buffer, "bestmove");
 			if(bestMove != NULL) {
-				char* move = bestMove + strlen("bestmove");
+				char* move = bestMove + strlen("bestmove") + 1;
 				move[5] = '\0';
-				return bestMove;
+				return move;
 			}
 		}
 		return NULL;
