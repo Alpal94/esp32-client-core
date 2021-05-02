@@ -45,11 +45,12 @@ class RobotMove {
 		};
 		int *processedMove = fen.processMove(move);
 
-		Square from = squareList[processedMove[0] + 8 * processedMove[1]];
+		Square from = squareList[processedMove[1] + 8 * processedMove[0]];
 		from = rotateSquare(from, { .rotation = from.rotation });
 
-		Square to = squareList[processedMove[2] + 8 * processedMove[3]];
+		Square to = squareList[processedMove[3] + 8 * processedMove[2]];
 		to = rotateSquare(to, { .rotation = to.rotation });
+		printf("Processed: %d %d - %d %d\n", processedMove[0], processedMove[1], processedMove[2], processedMove[3]);
 
 		printf("Center from: %f %f Center to: %f %f\n", from.center.x, from.center.y, to.center.x, to.center.y);
 

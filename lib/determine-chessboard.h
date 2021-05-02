@@ -318,7 +318,11 @@ class DetermineChessBoard {
 			//890.361450 549.599670
 			printMarker(Point(885, 557), 10, _lastFrame);
 			printMarker(Point(COLS / 2, ROWS / 2), 10, _lastFrame);
+			//1094.459473 514.308594 Center to: 926.229797 515.095703
 			//printSquare(squareList[i], _lastFrame);
+			//Center from: 846.381348 763.953125 Center to: 846.214661 597.484375
+			//printMarker(Point(846, 763), 12, _lastFrame);
+			//printMarker(Point(846, 597), 6, _lastFrame);
 			lastSquareIndex = i;
 			insertSquare(&localSquareMap, posX, posY, squareList[i], { .spacing = 0, .rotation = -squareList[i].rotation, .north = 0, .west = 0 }, Point(0,0), _lastFrame, true);
 			count++;
