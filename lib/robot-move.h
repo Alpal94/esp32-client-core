@@ -30,7 +30,7 @@ class RobotMove {
 			for(int c = 3; c <= 4; c++) {
 				Square square = squareList[r + c * 8];
 				square = rotateSquare(square, { .rotation = square.rotation });
-				FPoint boardCenter = calcCenterFromMiddleForSquares(r, c, square);
+				boardCenter = calcCenterFromMiddleForSquares(r, c, square);
 				spacingCenter += square.spacing;
 			}
 		}
@@ -39,9 +39,9 @@ class RobotMove {
 		float pixelDistanceRatio = calcPixelDistanceRatio(spacingCenter, SQUARE_WIDTH_CM);
 		float height = cameraHeightFromFieldWidth(pixelDistanceRatio);
 
-		FPoint pixelCamCenterToBoardCenter = {
-			.x = COLS / 2 - boardCenter.x,
-			.y = ROWS / 2 - boardCenter.y
+		FPoint realDistCamCenterToBoardCenter = {
+			.x = (COLS / 2 - boardCenter.x) * pixelDistanceRatio,
+			.y = (ROWS / 2 - boardCenter.y) * pixelDistanceRatio
 		};
 		int *processedMove = fen.processMove(move);
 
@@ -50,18 +50,41 @@ class RobotMove {
 
 		Square to = squareList[processedMove[3] + 8 * processedMove[2]];
 		to = rotateSquare(to, { .rotation = to.rotation });
+
+		FPoint boardCenterToTargetFrom = {
+			.x = (COLS / 2 - from.x) * pixelDistanceRatio,
+			.y = (COLS / 2 - from.y) * pixelDistanceRatio
+		};
+		FPoint boardCenterToTargetTo = {
+			.x = (COLS / 2 - to.x) * pixelDistanceRatio,
+			.y = (COLS / 2 - to.y) * pixelDistanceRatio
+		};
+
+		printf("Pixel distance ratio: %f\n", pixelDistanceRatio);
 		printf("Processed: %d %d - %d %d\n", processedMove[0], processedMove[1], processedMove[2], processedMove[3]);
-
 		printf("Center from: %f %f Center to: %f %f\n", from.center.x, from.center.y, to.center.x, to.center.y);
-
 		printf("Proposed move: %s\n", move);
 		printf("Calculated HEIGHT: %f for fieldWidth: %f\n", height, pixelDistanceRatio * COLS);
-		printf("Calculated board offset: %f %f\n", pixelCamCenterToBoardCenter.x, pixelCamCenterToBoardCenter.y);
+		printf("Calculated board offset: %f %f\n", realDistCamCenterToBoardCenter.x, realDistCamCenterToBoardCenter.y);
 
 		return true;
 	}
 
 	private:
+	RobotPosition calculateRobotPositionHover(FPoint realDistCamCenterToBoardCenter, FPoint boardCenterToTarget) {
+		FPoint move = {
+			.x = boardCenterToTarget.x - realDistCamCenterToBoardCenter.x,
+			.y = boardCenterToTarget.y - realDistCamCenterToBoardCenter.y
+		};
+		//Robot coords conversion --> c.x == r.y, c.x == r.z, r.z == vertical
+		return {
+			.x = move.y - robotPosition.x - CAMERA_TO_CLAW_OFFSET,
+			.y = robotPosition.y,
+			.z = move.x - robotPosition.z
+		};
+
+	}
+
 	FPoint calcCenterFromMiddleForSquares(int r, int c, Square square) {
 		if(r == 3 && c == 3) {
 			printf("SQUARE POS: %f %f\n", square.northEast.x, square.northEast.y);

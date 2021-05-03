@@ -131,8 +131,6 @@ class FenProcessor {
 		int endColIndex = charToIndex(move[2]);
 		int endRowIndex = 7-charToIndex(move[3]);
 		printf("TRYING: %s\n", move);
-		printf("MOVES: %d,%d %d,%d\n", startColIndex, startRowIndex, endColIndex, endRowIndex);
-
 		printf("WHAT IS: %c\n", move[0]);
 
 		int* moves = (int*) malloc(4 * sizeof(int));
