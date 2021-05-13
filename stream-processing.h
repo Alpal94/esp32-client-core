@@ -736,7 +736,7 @@ class StreamProcessing {
 
 			sprintf(fileName, "recorded/jpeg%d.jpg", frameReference);
 			imwrite(fileName, lastFrame);
-		}
+		} 
 	}
 
 	void processJPEG( int nSize, char* jpeg) {
@@ -755,13 +755,16 @@ class StreamProcessing {
 			printf("SUCCESSFULLY DECODED IMAGE: %d\n", frameReference);
 			//calibrate.undistortImage(decodedImage);
 			
+			if(frameReference == 0) {
+				robotMove.init();
+			}
 			lastFrame = decodedImage;
 			frameReference++;
 			processFrame();
 			if(HSV_EXPERIMENT) {
 				//while(frameReference == 3) {
 					hsv_processFrame(lastFrame);
-					waitKey(0);
+					waitKey(1);
 				//}
 			} else {
 				if(!CALIBRATE) {
@@ -780,7 +783,7 @@ class StreamProcessing {
 					imshow (window_name, display_mat);
 					//imshow ("window 2", lastFrame);
 				}
-				waitKey(0);
+				waitKey(1);
 			}
 			if(CALIBRATE) {
 				calibrate.calculateCalibrationDataFromFrame( decodedImage );

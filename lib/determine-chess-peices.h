@@ -689,13 +689,13 @@ class DetermineChessPieces {
 	}
 
 	vector<vector<Point> > shrinkContour(vector<Point> contour, float scaleDown, int transformX, int transformY) {
-		printf("\nSHRINK: %d %d ",  transformX, transformY);
+		//printf("\nSHRINK: %d %d ",  transformX, transformY);
 		for(int i = 0; i < contour.size(); i++) {
 			contour[i].x -= transformX;
 			contour[i].y -= transformY;
 			contour[i].x = (int) contour[i].x * scaleDown;
 			contour[i].y = (int) contour[i].y * scaleDown;
-			printf("| %d %d |", contour[i].x, contour[i].y);
+			//printf("| %d %d |", contour[i].x, contour[i].y);
 		}
 		vector<vector<Point> > smallContours;
 		smallContours.push_back(contour);

@@ -319,7 +319,7 @@ class DetermineChessBoard {
 			printMarker(Point(885, 557), 10, _lastFrame);
 			printMarker(Point(COLS / 2, ROWS / 2), 10, _lastFrame);
 			//1094.459473 514.308594 Center to: 926.229797 515.095703
-			//printSquare(squareList[i], _lastFrame);
+			printSquare(squareList[i], _lastFrame);
 			//Center from: 846.381348 763.953125 Center to: 846.214661 597.484375
 			//printMarker(Point(846, 763), 12, _lastFrame);
 			//printMarker(Point(846, 597), 6, _lastFrame);
@@ -393,7 +393,7 @@ class DetermineChessBoard {
 					if(j%16 == 8 && i%16 == 8 && (*_localSquareMap)[j%16][i%16].occupied) printf(" %c ", 'X');
 					else printf(" %d ", (*_localSquareMap)[j%16][i%16].occupied);
 					if((*_localSquareMap)[j%16][i%16].occupied) {
-						//printSquare(rotateSquare((*_localSquareMap)[j%16][i%16], { .rotation = 0/*-(*_localSquareMap)[j%16][i%16].rotation*/ }), _lastFrame);
+						//printSquare(rotateSquare((*_localSquareMap)[j%15][i%16], { .rotation = 0/*-(*_localSquareMap)[j%16][i%16].rotation*/ }), _lastFrame);
 					}
 				} else {
 					if(j == 16) printf("    ");

@@ -103,6 +103,8 @@ class FenProcessor {
 		else strcat(newFenString, fullMove);
 
 		fenBoard = newFenString;
+
+		printf("RM New board: %s\n", fenBoard);
 	}
 
 	char getColourToMove() {
