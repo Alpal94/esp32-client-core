@@ -74,9 +74,9 @@ class RobotMove {
 		printf("RM Calculated board offset: %f %f\n", realDistCamCenterToBoardCenter.x, realDistCamCenterToBoardCenter.y);
 
 		RobotPosition target = calculateRobotPositionHover(realDistCamCenterToBoardCenter, boardCenterToTargetTo, SWOOP_HEIGHT);
-		if(setRobotPosition(target)) {
+		/*if(setRobotPosition(target)) {
 			robotPosition = target;
-		}
+		}*/
 		printf("RM Target: %f %f %f\n", robotPosition.x, robotPosition.y, robotPosition.z);
 
 		return true;
@@ -118,6 +118,8 @@ class RobotMove {
 		};
 	}
 	bool setRobotPosition(RobotPosition _position) {
+		if(!COMMAND_ROBOT) return true;
+
 		CURL *curl;
 		CURLcode res;
 

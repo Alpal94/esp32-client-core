@@ -9,7 +9,7 @@
 #include "lib/robot-move.h"
 
 #define PRINT_LINES false
-#define PRINT_HOUGH_LINES false
+#define PRINT_HOUGH_LINES true
 #define NEW_LINE_POINTS false
 #define PRINT_CONTOURS false
 #define HSV_EXPERIMENT false
@@ -62,7 +62,7 @@ class StreamProcessing {
 
 	Mat evaluateContours(float scale, vector<vector<Point> > &_contours) {
 		Mat dst, detected_edges;
-		int lowThreshold = 15;
+		int lowThreshold = 10;
 		//const int max_lowThreshold = 100;
 		const int ratio = 3;
 		const int kernel_size = 3;
@@ -422,7 +422,7 @@ class StreamProcessing {
 	vector<LineMetadata> determineLines(Mat& edges, vector<vector<Point> >& squares) {
 		vector<Vec4i> houghLines;
 		vector<LineMetadata> lines;
-		HoughLinesP(edges, houghLines, 1, 0.5 * CV_PI/180, 120, 80, 100);
+		HoughLinesP(edges, houghLines, 1, 0.5 * CV_PI/180, 120, 80, 120);
 		printf("Hough begin: %ld\n\n", houghLines.size());
 		for( size_t i = 0; i < houghLines.size(); i++ ) {
 			if(PRINT_HOUGH_LINES) {
@@ -764,7 +764,7 @@ class StreamProcessing {
 			if(HSV_EXPERIMENT) {
 				//while(frameReference == 3) {
 					hsv_processFrame(lastFrame);
-					waitKey(1);
+					waitKey(0);
 				//}
 			} else {
 				if(!CALIBRATE) {
@@ -773,7 +773,7 @@ class StreamProcessing {
 					//imshow (window_name, display_mat);
 					//Mat channels[3];
 					//split(display_mat, channels);
-					cvtColor(display_mat, display_mat, COLOR_BGR2GRAY);
+					//cvtColor(display_mat, display_mat, COLOR_BGR2GRAY);
 					//threshold(channels[0], channels[0], 0, 255, THRESH_TOZERO);
 					//inRange(display_mat, Scalar(0,0,0), Scalar(15,100,100), mask);
 					//inRange(display_mat, Scalar(0, 0, 0), Scalar(0, 0, 0), mask2);
@@ -783,7 +783,7 @@ class StreamProcessing {
 					imshow (window_name, display_mat);
 					//imshow ("window 2", lastFrame);
 				}
-				waitKey(1);
+				waitKey(0);
 			}
 			if(CALIBRATE) {
 				calibrate.calculateCalibrationDataFromFrame( decodedImage );

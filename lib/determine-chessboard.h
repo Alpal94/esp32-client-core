@@ -316,10 +316,10 @@ class DetermineChessBoard {
 			}
 
 			//890.361450 549.599670
-			printMarker(Point(885, 557), 10, _lastFrame);
+			//printMarker(Point(885, 557), 10, _lastFrame);
 			printMarker(Point(COLS / 2, ROWS / 2), 10, _lastFrame);
 			//1094.459473 514.308594 Center to: 926.229797 515.095703
-			printSquare(squareList[i], _lastFrame);
+			//printSquare(squareList[i], _lastFrame);
 			//Center from: 846.381348 763.953125 Center to: 846.214661 597.484375
 			//printMarker(Point(846, 763), 12, _lastFrame);
 			//printMarker(Point(846, 597), 6, _lastFrame);
@@ -334,7 +334,7 @@ class DetermineChessBoard {
 		}*/
 
 		asciiPrintBoard(&localSquareMap, _lastFrame);
-		//calcPerfectBoard(&localSquareMap, _lastFrame);
+		calcPerfectBoard(&localSquareMap, _lastFrame);
 		drawing.push_back(squareIntercepts);
 
 		squares = drawing;
@@ -437,65 +437,85 @@ class DetermineChessBoard {
 	}
 
 	void calcPerfectBoard(Square (*_squareMap)[OVERSIZED_BOARD][OVERSIZED_BOARD], Mat &_lastFrame) {
+		FPoint centerPoint = { .x = COLS / 2.0, .y = ROWS / 2.0 };
 		Square start = { .occupied = false };
 		int startX, startY;
 		FPoint southWest, northEast;
 		for(int i = 0; i < OVERSIZED_BOARD; i++) {
 			for(int j = 0; j < OVERSIZED_BOARD; j++) {
 				if((*_squareMap)[i][j].occupied) {
-					start = (*_squareMap)[i][j];
-
-					start = rotateSquare(start, { .spacing = 0, .rotation = -start.rotation, .north = 0, .west = 0 });
-					//printSquare((*_squareMap)[i][j], _lastFrame);
-					southWest = start.southWest;
-					startX = i;
-					startY = j;
-					break;
+					Square square = (*_squareMap)[i][j];
+					square = rotateSquare(square, { .spacing = 0, .rotation = square.rotation, .north = 0, .west = 0 });
+					float dist = fPixelDist(square.northEast, centerPoint);
+					printf("DISTANCE: ne: %f se: %f sw: %f nw: %f\n", fPixelDist(square.northEast, centerPoint), fPixelDist(square.southEast, centerPoint), fPixelDist(square.southWest, centerPoint), fPixelDist(square.northWest, centerPoint));
+					if(dist < 15) {
+						start = square;
+						//printSquare(start, _lastFrame);
+						break;
+					}
 				}
 				
 			}
 			if(start.occupied) break;
 		}
-		int endX, endY, found = false;
-		for(int i = OVERSIZED_BOARD - 1; i >=0; i--) {
-			for(int j = OVERSIZED_BOARD - 1; j >=0; j--) {
-				if((*_squareMap)[i][j].occupied) {
-					Square end = (*_squareMap)[i][j];
-					end = rotateSquare(end, { .spacing = 0, .rotation = -end.rotation, .north = 0, .west = 0 });
-					endX = i;
-					endY = j;
-					//printSquare(end, _lastFrame);
-					northEast = end.southWest;
-					found = true;
-					break;
-				}
-			}
-			if(found) break;
-		}
+		generateQuarter(start, _lastFrame,
+			NE, NW, SE, SW,
+			SE, SW, NE, NW,
+			NW, SW, NE, SE,
+			NW, SW, NE, SE
+		);
+	}
 
-		int width = endX - startX + 1;
-		int height = endY - startY + 1;
-		float spacing = fabs((northEast.x - southWest.x) / (width));
-		printMarker(Point((int) northEast.x, (int)northEast.y), 10, _lastFrame);
-		printMarker(Point((int) southWest.x, (int)southWest.y), 10, _lastFrame);
-		printf("Width: %d Height: %d [(%d, %d) to (%d, %d)]\n", width, height, startX, startY, endX, endY);
+	void generateQuarter(
+		Square start, Mat &_lastFrame,
+		Orientation fvob1, Orientation fvob2, Orientation fvot1, Orientation fvot2,
+		Orientation vob1, Orientation vob2, Orientation vot1, Orientation vot2,
+		Orientation fhob1, Orientation fhob2, Orientation fhot1, Orientation fhot2,
+		Orientation hob1, Orientation hob2, Orientation hot1, Orientation hot2
+		) {
+		int width = 4;
+		int height = 4;
+		float spacing = start.spacing;
 
 		Square current = start;
 		Square rowStart = start;
-		//printSquare(start, _lastFrame);
+		printSquare(start, _lastFrame);
+	/*for(int w = 0; w < width; w++) {
+		for(int h = 1; h < height; h++) {
+			current = generateNeighboringSquare(current, current.northEast, current.northWest, current.southEast, current.southWest, SE, SW, NE, NW, spacing, _lastFrame);
+			printSquare(current, _lastFrame);
+
+		}
+		if(width != w + 1) {
+			rowStart = generateNeighboringSquare(rowStart, rowStart.northWest, rowStart.southWest, rowStart.northEast, rowStart.southEast, NW, SW, NE, SE, spacing, _lastFrame);
+			current = rowStart;
+			printSquare(current, _lastFrame);
+		}
+	}*/
+
+
 		for(int w = 0; w < width; w++) {
 			for(int h = 1; h < height; h++) {
-				//current = generateNeighboringSquare(current, current.southWest, current.southEast, current.northWest, current.northEast, SW, SE, NW, NE, spacing, _lastFrame);
-				current = generateNeighboringSquare(current, current.southEast, current.southWest, current.northEast, current.northWest, SE, SW, NE, NW, spacing, _lastFrame);
-				//printSquare(current, _lastFrame);
+				current = generateNeighboringSquare(current, orientationToFPoint(current, fvob1), orientationToFPoint(current, fvob2), orientationToFPoint(current, fvot1), orientationToFPoint(current, fvot2), vob1, vob2, vot1, vot2, spacing, _lastFrame);
+				printSquare(current, _lastFrame);
 
 			}
 			if(width != w + 1) {
-				rowStart = generateNeighboringSquare(rowStart, rowStart.southWest, rowStart.northWest, rowStart.southEast, rowStart.northEast, SW, NW, SE, NE, spacing, _lastFrame);
+				rowStart = generateNeighboringSquare(rowStart, orientationToFPoint(rowStart, fhob1), orientationToFPoint(rowStart, fhob2), orientationToFPoint(rowStart, fhot1), orientationToFPoint(rowStart, fhot2), hob1, hob2, hot1, hot2, spacing, _lastFrame);
 				current = rowStart;
+				printSquare(current, _lastFrame);
 			}
 		}
-		
+	}
+
+	FPoint orientationToFPoint(Square square, Orientation orientation) {
+		switch (orientation) {
+			case NE: return square.northEast;
+			case NW: return square.northWest;
+			case SW: return square.southWest;
+			case SE: return square.southEast;
+			default: return { .x = -1, .y = -1 };
+		}
 	}
 	
 	Square generateNeighboringSquare(
