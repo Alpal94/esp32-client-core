@@ -458,49 +458,53 @@ class DetermineChessBoard {
 			}
 			if(start.occupied) break;
 		}
-		generateQuarter(start, _lastFrame,
+		/*generateQuarter(start, _lastFrame, 0, 1, 4, 4,
 			NE, NW, SE, SW,
 			SE, SW, NE, NW,
+			NW, SW, NE, SE,
+			NW, SW, NE, SE
+		);*/
+		/*generateQuarter(start, _lastFrame,
+			NE, NW, SE, SW,
+			SE, SW, NE, NW,
+			SW, NW, SE, NE,
+			SW, NW, SE, NE
+		);
+		generateQuarter(start, _lastFrame,
+			NW, NE, SW, SE,
+			SW, SE, NW, NE,
+			SW, NW, SE, NE,
+			SW, NW, SE, NE
+		);*/
+		generateQuarter(start, _lastFrame, 1, 2, 4, 5,
+			NW, NE, SW, SE,
+			SW, SE, NW, NE,
 			NW, SW, NE, SE,
 			NW, SW, NE, SE
 		);
 	}
 
 	void generateQuarter(
-		Square start, Mat &_lastFrame,
+		Square start, Mat &_lastFrame, int width1, int height1, int width2, int height2,
 		Orientation fvob1, Orientation fvob2, Orientation fvot1, Orientation fvot2,
 		Orientation vob1, Orientation vob2, Orientation vot1, Orientation vot2,
 		Orientation fhob1, Orientation fhob2, Orientation fhot1, Orientation fhot2,
 		Orientation hob1, Orientation hob2, Orientation hot1, Orientation hot2
 		) {
-		int width = 4;
-		int height = 4;
 		float spacing = start.spacing;
 
 		Square current = start;
 		Square rowStart = start;
 		printSquare(start, _lastFrame);
-	/*for(int w = 0; w < width; w++) {
-		for(int h = 1; h < height; h++) {
-			current = generateNeighboringSquare(current, current.northEast, current.northWest, current.southEast, current.southWest, SE, SW, NE, NW, spacing, _lastFrame);
-			printSquare(current, _lastFrame);
 
-		}
-		if(width != w + 1) {
-			rowStart = generateNeighboringSquare(rowStart, rowStart.northWest, rowStart.southWest, rowStart.northEast, rowStart.southEast, NW, SW, NE, SE, spacing, _lastFrame);
-			current = rowStart;
-			printSquare(current, _lastFrame);
-		}
-	}*/
-
-
-		for(int w = 0; w < width; w++) {
-			for(int h = 1; h < height; h++) {
+		for(int w = 0; w < width2; w++) {
+			for(int h = 1; h < height2; h++) {
 				current = generateNeighboringSquare(current, orientationToFPoint(current, fvob1), orientationToFPoint(current, fvob2), orientationToFPoint(current, fvot1), orientationToFPoint(current, fvot2), vob1, vob2, vot1, vot2, spacing, _lastFrame);
-				printSquare(current, _lastFrame);
+				if(h >= height1) printSquare(current, _lastFrame);
+				
 
 			}
-			if(width != w + 1) {
+			if(width2 != w + 1) {
 				rowStart = generateNeighboringSquare(rowStart, orientationToFPoint(rowStart, fhob1), orientationToFPoint(rowStart, fhob2), orientationToFPoint(rowStart, fhot1), orientationToFPoint(rowStart, fhot2), hob1, hob2, hot1, hot2, spacing, _lastFrame);
 				current = rowStart;
 				printSquare(current, _lastFrame);
