@@ -3,10 +3,11 @@ class CalibrateCamera {
 	Mat K, D;
 	Mat grayFrame;
 	bool KDReadFromFile = 0;
-	int board_width = 8;
+	int board_width = 9;
 	int board_height = 6;
 	int frameReference = 0;
 	bool calibRun = false;
+	bool calibStart = false;
 	float square_size = 23.3;
 	const char* window_name = "Calibration Program";
 
@@ -16,8 +17,8 @@ class CalibrateCamera {
 
 
 	void convertToBinary(Mat& image) {
-		int threshold_value = 146;
-		int threshold_type = 3;
+		int threshold_value = 50;
+		int threshold_type = THRESH_BINARY;
 		//int const max_value = 255;
 		//int const max_type = 4;
 		int const max_binary_value = 255;
@@ -46,12 +47,13 @@ class CalibrateCamera {
 
 	int closeFramesSinceLast = 0;
 	Mat calibrationExecute(Mat grayImage) {
+		convertToBinary(grayImage);
 		if(closeFramesSinceLast > 0) {
 			closeFramesSinceLast++;
-			if(closeFramesSinceLast > 10) {
+			/*if(closeFramesSinceLast > 10) {
 				closeFramesSinceLast = 0;
 			}
-			return grayImage;
+			return grayImage;*/
 		}
 		printf("Cali running\n");
 		Size board_size = Size(board_width, board_height);
@@ -59,7 +61,7 @@ class CalibrateCamera {
 		bool found = false;
 		bool circleChess = true;
 		if(circleChess) {
-			found = findChessboardCorners(grayImage, board_size, corners,  CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_FAST_CHECK | CALIB_CB_NORMALIZE_IMAGE);
+			found = findChessboardCorners(grayImage, board_size, corners,  CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE);
 			if(found) {
 				printf("FOUND\n");
 				closeFramesSinceLast++;
@@ -77,15 +79,28 @@ class CalibrateCamera {
 			}
 		}
 		if(found) closeFramesSinceLast++;
+		Mat scaledDown;
+		resize(grayImage, scaledDown, Size(), 0.8, 0.8);
+		//imshow("CALIBRATION1", scaledDown);
+		//convertToBinary(scaledDown);
+		imshow("CALIBRATION", scaledDown);
+		int key = waitKey(0);
 
-		vector< Point3f > obj;
-		for (int i = 0; i < board_height; i++)
-			for (int j = 0; j < board_width; j++)
-				obj.push_back(Point3f((float)j * square_size, (float)i * square_size, 0));
-		if (found) {
-			printf("Found corners\n");
-			image_points.push_back(corners);
-			object_points.push_back(obj);
+		if(key == 'a') {
+			vector< Point3f > obj;
+			for (int i = 0; i < board_height; i++)
+				for (int j = 0; j < board_width; j++)
+					obj.push_back(Point3f((float)j * square_size, (float)i * square_size, 0));
+			if (found) {
+				printf("Found corners\n");
+				printf("FOUND FOUND FOUND\n");
+				image_points.push_back(corners);
+				object_points.push_back(obj);
+			}
+		} else if(key == 'f') {
+			calibStart = true; 
+		} else if(key != 's') {
+			exit(1);
 		}
 		return grayImage;
 	}
@@ -117,12 +132,11 @@ class CalibrateCamera {
 			if(scaleImage) {
 				resize(chessBoardImage, chessBoardImage, Size(), 0.5 / scale, 0.5 / scale);
 			}
-			imshow (window_name, chessBoardImage);
+			//imshow (window_name, chessBoardImage);
 		}
-		if(frameReference == 230 && !calibRun) {
+		if(calibStart && !calibRun) {
 			runCalibration();
 			calibRun = true;
-			waitKey(0);
 		}
 		if(calibRun) {
 

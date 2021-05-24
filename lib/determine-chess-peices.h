@@ -464,14 +464,15 @@ class DetermineChessPieces {
 	};
 	void filterChessPieces(Mat& edges, vector<Square>& _localSquareList, Mat& frame, Mat originalFrame) {
 
-		if(_localSquareList.size() != 64) return;
+		//if(_localSquareList.size() != 64) return;
 		Mat clone = originalFrame.clone();
 		ColourAnalysis analysis(clone);
 		//imshow("FRAME", frame);
 		//waitKey(0);
 		for(int i = 0; i < _localSquareList.size(); i++) {
 			Square square = _localSquareList[i];
-			printSquare(rotateSquare(square, { .rotation = square.rotation }), edges, Scalar(0));
+			//printSquare(rotateSquare(square, { .rotation = square.rotation }), frame, Scalar(0));
+			printSquare(square, frame, Scalar(0));
 		}
 
 		/*vector<Vec4i> lines;
@@ -717,7 +718,7 @@ class DetermineChessPieces {
 		drawing.push_back(marker);
 	}
 	void printSquare(Square _square, Mat &_display, Scalar colour) {
-		int thickness = 20;
+		int thickness = 5;
 		line( _display,
 				Point(_square.northEast.x, _square.northEast.y),
 				Point(_square.northWest.x, _square.northWest.y),

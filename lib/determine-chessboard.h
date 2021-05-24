@@ -460,28 +460,34 @@ class DetermineChessBoard {
 			if(start.occupied) break;
 		}
 		printf("\n");
-		generateQuarter(start, _lastFrame, 0, 0, 4, 4, _squareMap, 0, 0,
+		Square generatedSquareMap[OVERSIZED_BOARD][OVERSIZED_BOARD] = {};
+		for(int i = 0; i < OVERSIZED_BOARD; i++) {
+			for(int j = 0; j < OVERSIZED_BOARD; j++) {
+				(*_squareMap)[i][j].occupied = false;
+			}
+		}
+		generateQuarter(start, _lastFrame, 0, 0, 4, 4, _squareMap, &generatedSquareMap, 3, 3, 0, 0, start.spacing,
 			NE, NW, SE, SW,
 			SE, SW, NE, NW,
 			NW, SW, NE, SE,
 			NW, SW, NE, SE
 		);
 		printf("\n");
-		generateQuarter(start, _lastFrame, 1, 0, 5, 4, _squareMap, 0, 3,
+		generateQuarter(start, _lastFrame, 1, 0, 5, 4, _squareMap, &generatedSquareMap, 3, 4, 0, 8, start.spacing * 1.05,
 			NE, NW, SE, SW,
 			SE, SW, NE, NW,
 			SW, NW, SE, NE,
 			SW, NW, SE, NE
 		);
 		printf("\n");
-		generateQuarter(start, _lastFrame, 1, 1, 5, 5, _squareMap, 3, 0,
+		generateQuarter(start, _lastFrame, 1, 1, 5, 5, _squareMap, &generatedSquareMap, 3, 3, 7, 7, start.spacing * 1.1,
 			NW, NE, SW, SE,
 			SW, SE, NW, NE,
 			SW, NW, SE, NE,
 			SW, NW, SE, NE
 		);
 		printf("\n");
-		generateQuarter(start, _lastFrame, 0, 1, 4, 5, _squareMap, 3, 3,
+		generateQuarter(start, _lastFrame, 0, 1, 4, 5, _squareMap, &generatedSquareMap, 3, 3, 7, 0, start.spacing * 1.05,
 			NW, NE, SW, SE,
 			SW, SE, NW, NE,
 			NW, SW, NE, SE,
@@ -491,45 +497,67 @@ class DetermineChessBoard {
 
 	void generateQuarter(
 		Square start, Mat &_lastFrame, int width1, int height1, int width2, int height2,
-		Square (*_squareMap)[OVERSIZED_BOARD][OVERSIZED_BOARD], int startX, int startY,
+		Square (*_squareMap)[OVERSIZED_BOARD][OVERSIZED_BOARD], 
+		Square (*_newSquareMap)[OVERSIZED_BOARD][OVERSIZED_BOARD],
+		int startX, int startY, int endX, int endY, float spacing,
 		Orientation fvob1, Orientation fvob2, Orientation fvot1, Orientation fvot2,
 		Orientation vob1, Orientation vob2, Orientation vot1, Orientation vot2,
 		Orientation fhob1, Orientation fhob2, Orientation fhot1, Orientation fhot2,
 		Orientation hob1, Orientation hob2, Orientation hot1, Orientation hot2
 		) {
-		float spacing = start.spacing;
 
 		Square current = start;
 		Square rowStart = start;
 
+		bool special = false;
 		int posX = startX, posY = startY;
 		if(height1 == 0 && width1 == 0) {
 			printf(" %d_%d ", posX, posY);
-			printSquare(start, _lastFrame);
+			//printSquare(start, _lastFrame);
+			localSquareMap[posX][posY] = start;
+			special = true;
 		}
 		for(int w = 0; w < width2; w++) {
 			for(int h = 1; h < height2; h++) {
 
-				if((*_squareMap)[posX][posY].occupied) spacing = (*_squareMap)[posX][posY].spacing;
+				//if((*_squareMap)[posX][posY].occupied) spacing = (*_squareMap)[posX][posY].spacing;
 				current = generateNeighboringSquare(current, orientationToFPoint(current, fvob1), orientationToFPoint(current, fvob2), orientationToFPoint(current, fvot1), orientationToFPoint(current, fvot2), vob1, vob2, vot1, vot2, spacing, _lastFrame);
 				if(w >= width1) {
-					posX++;
-					printSquare(current, _lastFrame);
-					printf(" %d_%d ", posX, posY);
+					//printSquare(current, _lastFrame);
+					if(special) {
+						startX < endX ? posX++ : posX--;
+						printf(" %d_%d ", posX, posY);
+						localSquareMap[posX][posY] = current;
+					} else {
+						startX < endX ? posX++ : posX--;
+						printf(" %d_%d ", posX, posY);
+						localSquareMap[posX][posY] = current;
+					}
 				}
 
 			}
 			if(width2 != w + 1) {
-				if((*_squareMap)[posX][posY].occupied) spacing = (*_squareMap)[posX][posY].spacing;
+				//if((*_squareMap)[posX][posY].occupied) spacing = (*_squareMap)[posX][posY].spacing;
 				printf("SPACING: %f\n", spacing);
 				rowStart = generateNeighboringSquare(rowStart, orientationToFPoint(rowStart, fhob1), orientationToFPoint(rowStart, fhob2), orientationToFPoint(rowStart, fhot1), orientationToFPoint(rowStart, fhot2), hob1, hob2, hot1, hot2, spacing, _lastFrame);
 				current = rowStart;
-				if(height1 == 0) {
-					posY++;
-					printSquare(current, _lastFrame);
-					printf(" %d_%d ", posX, posY);
-				}
 				posX = startX;
+				if(height1 == 0) {
+					//printSquare(current, _lastFrame);
+					if(special) { 
+						startY < endY ? posY++ : posY--;
+						printf(" %d__%d ", posX, posY);
+						localSquareMap[posX][posY] = current;
+						//if(!specialFirstLine) startY < endY ? posY++ : posY--;
+					} else {
+						printf(" %d__%d ", posX, posY);
+						localSquareMap[posX][posY] = current;
+						//if(!specialFirstLine) startY < endY ? posY++ : posY--;
+						startY < endY ? posY++ : posY--;
+					}
+				} else {
+					startY < endY ? posY++ : posY--;
+				}
 			}
 		}
 	}
@@ -579,6 +607,8 @@ class DetermineChessBoard {
 		updateSquareCorner(neighbor, b3, ob2);
 		updateSquareCorner(neighbor, t3, ot2);
 		neighbor.center = squareCenter(neighbor);
+		neighbor.occupied = true;
+		neighbor.rotation = calcRotation(neighbor);
 		//printSquare(neighbor, _lastFrame);
 		return neighbor;
 
