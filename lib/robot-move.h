@@ -35,7 +35,7 @@ class RobotMove {
 		for(int r = 3; r <= 4; r++) {
 			for(int c = 3; c <= 4; c++) {
 				Square square = squareList[r + c * 8];
-				square = rotateSquare(square, { .rotation = square.rotation });
+				//square = rotateSquare(square, { .rotation = square.rotation });
 				boardCenter = calcCenterFromMiddleForSquares(r, c, square);
 				spacingCenter += square.spacing;
 			}
@@ -52,18 +52,18 @@ class RobotMove {
 		int *processedMove = fen.processMove(move);
 
 		Square from = squareList[processedMove[1] + 8 * processedMove[0]];
-		from = rotateSquare(from, { .rotation = from.rotation });
+		//from = rotateSquare(from, { .rotation = from.rotation });
 
 		Square to = squareList[processedMove[3] + 8 * processedMove[2]];
-		to = rotateSquare(to, { .rotation = to.rotation });
+		//to = rotateSquare(to, { .rotation = to.rotation });
 
 		FPoint boardCenterToTargetFrom = {
-			.x = (COLS / 2 - from.x) * pixelDistanceRatio,
-			.y = (COLS / 2 - from.y) * pixelDistanceRatio
+			.x = (COLS / 2 - from.center.x) * pixelDistanceRatio,
+			.y = (ROWS / 2 - from.center.y) * pixelDistanceRatio
 		};
 		FPoint boardCenterToTargetTo = {
-			.x = (COLS / 2 - to.x) * pixelDistanceRatio,
-			.y = (COLS / 2 - to.y) * pixelDistanceRatio
+			.x = (COLS / 2 - to.center.x) * pixelDistanceRatio,
+			.y = (ROWS / 2 - to.center.y) * pixelDistanceRatio
 		};
 
 		printf("RM Pixel distance ratio: %f\n", pixelDistanceRatio);
@@ -73,11 +73,20 @@ class RobotMove {
 		printf("RM Calculated HEIGHT: %f for fieldWidth: %f\n", height, pixelDistanceRatio * COLS);
 		printf("RM Calculated board offset: %f %f\n", realDistCamCenterToBoardCenter.x, realDistCamCenterToBoardCenter.y);
 
-		RobotPosition target = calculateRobotPositionHover(realDistCamCenterToBoardCenter, boardCenterToTargetTo, SWOOP_HEIGHT);
-		/*if(setRobotPosition(target)) {
-			robotPosition = target;
+		RobotPosition robotPositionFrom = calculateRobotPositionHover(realDistCamCenterToBoardCenter, boardCenterToTargetFrom, SWOOP_HEIGHT);
+		RobotPosition robotPositionTo = calculateRobotPositionHover(realDistCamCenterToBoardCenter, boardCenterToTargetTo, SWOOP_HEIGHT);
+		/*if(setRobotPosition(robotPositionFrom)) {
+			robotPosition = robotPositionFrom;
+		}
+		sleep(5);
+		if(setRobotPosition(robotPositionTo)) {
+			robotPosition = robotPositionTo;
 		}*/
-		printf("RM Target: %f %f %f\n", robotPosition.x, robotPosition.y, robotPosition.z);
+		printf("RM Default: %f %f %f\n", robotPosition.x, robotPosition.y, robotPosition.z);
+		printf("RM Board Center: %f %f\n", realDistCamCenterToBoardCenter.x, realDistCamCenterToBoardCenter.y);
+		printf("RM Target From: %f %f %f\n", robotPositionFrom.x, robotPositionFrom.y, robotPositionFrom.z);
+		printf("RM Target To: %f %f %f\n", robotPositionTo.x, robotPositionTo.y, robotPositionTo.z);
+		printf("RM To: %f %f From: %f %f\n", boardCenterToTargetTo.x, boardCenterToTargetTo.y, boardCenterToTargetFrom.x, boardCenterToTargetFrom.y);
 
 		return true;
 	}
@@ -88,11 +97,13 @@ class RobotMove {
 			.x = boardCenterToTarget.x - realDistCamCenterToBoardCenter.x,
 			.y = boardCenterToTarget.y - realDistCamCenterToBoardCenter.y
 		};
+		printf("RM Move: %f %f\n", move.x, move.y);
+		printf("RM RB: %f %f\n", robotPosition.x, robotPosition.y);
 		//Robot coords conversion --> c.x == r.y, c.x == r.z, r.z == vertical
 		return {
-			.x = move.y - robotPosition.x - CAMERA_TO_CLAW_OFFSET,
+			.x = robotPosition.x + move.y - CAMERA_TO_CLAW_OFFSET,
 			.y = height,
-			.z = move.x - robotPosition.z
+			.z = robotPosition.z + move.x
 		};
 
 	}

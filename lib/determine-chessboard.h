@@ -315,9 +315,10 @@ class DetermineChessBoard {
 				}
 			}
 
-			//890.361450 549.599670
+			//764.972534 798.880493
 			//printMarker(Point(885, 557), 10, _lastFrame);
 			printMarker(Point(COLS / 2, ROWS / 2), 10, _lastFrame);
+			printMarker(Point(764, 798), 10, _lastFrame);
 			//1094.459473 514.308594 Center to: 926.229797 515.095703
 			//printSquare(squareList[i], _lastFrame);
 			//Center from: 846.381348 763.953125 Center to: 846.214661 597.484375
@@ -473,14 +474,14 @@ class DetermineChessBoard {
 			NW, SW, NE, SE
 		);
 		printf("\n");
-		generateQuarter(start, _lastFrame, 1, 0, 5, 4, _squareMap, &generatedSquareMap, 3, 4, 0, 8, start.spacing * 1.05,
+		generateQuarter(start, _lastFrame, 1, 0, 5, 4, _squareMap, &generatedSquareMap, 3, 4, 0, 8, start.spacing * 1.0,
 			NE, NW, SE, SW,
 			SE, SW, NE, NW,
 			SW, NW, SE, NE,
 			SW, NW, SE, NE
 		);
 		printf("\n");
-		generateQuarter(start, _lastFrame, 1, 1, 5, 5, _squareMap, &generatedSquareMap, 3, 3, 7, 7, start.spacing * 1.1,
+		generateQuarter(start, _lastFrame, 1, 1, 5, 5, _squareMap, &generatedSquareMap, 3, 3, 7, 7, start.spacing * 1.05,
 			NW, NE, SW, SE,
 			SW, SE, NW, NE,
 			SW, NW, SE, NE,

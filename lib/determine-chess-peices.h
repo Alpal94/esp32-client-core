@@ -2,8 +2,6 @@
 
 using namespace cv;
 using namespace std;
-#define FROWS 120
-#define FCOLS 160
 #define BOARD 8
 
 class Positions {
@@ -270,11 +268,11 @@ class ColourAnalysis {
 
 	private:
 	void floodFill(Point2f point, vector<Point>& contour, MinMaxHSV &colourRange, float thresh, bool init) {
-		if(init) {
+		/*if(init) {
 			for(int i = 0; i < FCOLS; i++) memset(seen[i], 0, sizeof(seen[i]));
 			colourRange.hist.clear();
 			count = 0;
-		}
+		}*/
 		
 		if(point.x > COLS || point.y > ROWS || point.x < 0 || point.y < 0) return;
 		if(seen[(int)point.x][(int)point.y]) return;
@@ -308,7 +306,7 @@ class ColourAnalysis {
 			}
 			printf("COLOUR TEST: TEST: hsv:(%d %d %d) h:(%d %d) s:(%d %d) v:(%d %d)\n", hue, saturation, value, lowerHue, upperHue, lowerSaturation, upperSaturation, lowerValue, upperValue);*/
 			//printf("- %d -\n", grey);
-			if(grey < 50) colourRange.colourTestCount++;
+			if(grey < 25) colourRange.colourTestCount++;
 			colourRange.colourTestTotalCount++;
 		}
 
@@ -411,8 +409,6 @@ class DetermineChessPieces {
 	MinMaxHSV squareColour[2];
 	char chessBoard[OVERSIZED_BOARD][OVERSIZED_BOARD] = {};
 
-	ContourMap contourMap[FROWS][FCOLS];
-
 	vector<vector<Point> > contours;
 	vector<vector<Point> > drawing;
 	vector<Vec4i> hierarchy;
@@ -435,14 +431,14 @@ class DetermineChessPieces {
 
 		hierarchy = _hierarchy;
 
-		//contourMap[COLS][ROWS] = {};
-		/*for(int i = 0; i < COLS; i++) {
-			for(int j = 0; j < ROWS; j++) {
-				contourMap[i][j].active = false;
-			}
-		}*/
-		printMarker(Point(300, 300), drawing, 90);
-		filterChessPieces(_detectedEdges, _localSquareList, _lastFrame, _lastFrame);
+		int lowThreshold = 15;
+		const int ratio = 2;
+		const int kernel_size = 3;
+		Mat edges;
+		cvtColor(_lastFrame, edges, COLOR_BGR2GRAY);
+		Canny( edges, edges, lowThreshold, lowThreshold*ratio, kernel_size );
+//735.882202 825.754395 Center to: 735.964966 664.684937
+		filterChessPieces(edges, _localSquareList, _lastFrame, _lastFrame);
 	}
 
 	MinMaxHSV getSquareColour(bool blackWhite) {
@@ -464,15 +460,16 @@ class DetermineChessPieces {
 	};
 	void filterChessPieces(Mat& edges, vector<Square>& _localSquareList, Mat& frame, Mat originalFrame) {
 
-		//if(_localSquareList.size() != 64) return;
+		if(_localSquareList.size() != 64) return;
 		Mat clone = originalFrame.clone();
 		ColourAnalysis analysis(clone);
-		//imshow("FRAME", frame);
+		//imshow("EDGES", edges);
 		//waitKey(0);
 		for(int i = 0; i < _localSquareList.size(); i++) {
 			Square square = _localSquareList[i];
 			//printSquare(rotateSquare(square, { .rotation = square.rotation }), frame, Scalar(0));
-			printSquare(square, frame, Scalar(0));
+			printSquare(square, edges, Scalar(0));
+			//printSquare(square, frame, Scalar(0));
 		}
 
 		/*vector<Vec4i> lines;
@@ -504,8 +501,6 @@ class DetermineChessPieces {
 		for( int i = 0; i < contours.size(); i++) {
 			drawContours( edges, contours, i, Scalar(255), 4, 8);
 		}
-		//imshow("test", edges);
-		//waitKey(0);
 		vector<vector<Point> > pieceContours;
 		vector<Vec4i> pieceHierarchy;
 		findContours( edges, pieceContours, pieceHierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
@@ -523,13 +518,13 @@ class DetermineChessPieces {
 				int squareIndex;
 				Point center = Point(int(m.m10 / m.m00), int(m.m01 / m.m00));
 				for(int j = 0; j < _localSquareList.size(); j++) {
-					float shift = -_localSquareList[j].spacing / 5 ;
+					float shift = -_localSquareList[j].spacing / 10 ;
 					Square shrinkSquare = _localSquareList[j];
 					shrinkSquare.northEast = shiftPoint(shrinkSquare.northEast, shift, shift);
 					shrinkSquare.northWest = shiftPoint(shrinkSquare.northWest, -shift, shift);
 					shrinkSquare.southWest = shiftPoint(shrinkSquare.southWest, -shift, -shift);
 					shrinkSquare.southEast = shiftPoint(shrinkSquare.southEast, shift, -shift);
-					shrinkSquare = rotateSquare(shrinkSquare, { .rotation = shrinkSquare.rotation });
+					//shrinkSquare = rotateSquare(shrinkSquare, { .rotation = shrinkSquare.rotation });
 
 					vector<Point> bounds;
 					bounds.push_back(fPointToPoint(shrinkSquare.northEast));
@@ -541,6 +536,11 @@ class DetermineChessPieces {
 						isPiece = true;
 						squareIndex = j;
 						square = _localSquareList[j];
+
+						vector<vector<Point> > all;
+						all.clear();
+						all.push_back(pieceHulls[i]);
+						drawContours( originalFrame, all, 0, Scalar(255, 255, 255), 2, 8);
 					}
 				}
 				if(isPiece) {
@@ -552,16 +552,12 @@ class DetermineChessPieces {
 						}
 					}
 					squareHulls[squareIndex].square = square;
-
-
 				}
 				//
-				/*vector<vector<Point> > all;
-				all.clear();
-				all.push_back(approxPoly);
-				drawContours( originalFrame, all, 0, Scalar(255, 255, 255), 2, 8);*/
+
 			}
 		}
+
 		for( int i = 0; i < _localSquareList.size(); i++) {
 			vector<Point> hull;
 			Square square = squareHulls[i].square;
@@ -606,14 +602,13 @@ class DetermineChessPieces {
 			//drawContours( frame, pieceHulls, i, Scalar(255, 255, 255), 2, 8);
 			//drawContours( frame, contours, i, Scalar(255, 255, 255), 4, 8);
 		}
-
 		positions.finishBoardUpdate();
 		//imshow("DETECTED EDGES: ", edges);
 		//waitKey(0);
 	}
 
 	bool isBrown(Point center, vector<Point>& hull, ColourAnalysis &analysis) {
-		MinMaxHSV res = analysis.contourColourAnalysis(center, hull, Vec3b(7, 200, 25), Vec3b(7, 55, 25));
+		MinMaxHSV res = analysis.contourColourAnalysis(center, hull, Vec3b(7, 15, 7), Vec3b(7, 15, 7));
 		float percentage = (float) res.colourTestCount / (float) res.colourTestTotalCount;
 		printf("COLOUR test count: %d vs %d for %d\n", res.colourTestCount, res.colourTestTotalCount, (int) (percentage * 100));
 		return percentage > 0.4;
@@ -718,7 +713,7 @@ class DetermineChessPieces {
 		drawing.push_back(marker);
 	}
 	void printSquare(Square _square, Mat &_display, Scalar colour) {
-		int thickness = 5;
+		int thickness = 20;
 		line( _display,
 				Point(_square.northEast.x, _square.northEast.y),
 				Point(_square.northWest.x, _square.northWest.y),
