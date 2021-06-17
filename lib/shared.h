@@ -108,6 +108,7 @@ struct RobotPosition {
 	float x;
 	float y;
 	float z;
+	int c;
 };
 
 struct MinMaxHSV {

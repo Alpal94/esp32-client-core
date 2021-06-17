@@ -7,7 +7,8 @@ using namespace std;
 #define CAMERA_TO_CLAW_OFFSET 3.00f
 #define HOARM_LENGTH 14.7
 #define MAINARM_LENGTH 13.5
-#define SWOOP_HEIGHT 5
+#define SWOOP_HEIGHT 9
+#define PICKUP_HEIGHT 2
 
 class RobotMove {
 	private:
@@ -17,7 +18,9 @@ class RobotMove {
 		float squareWidth;
 	};
 
-	RobotPosition defaultPosition = { .x = HOARM_LENGTH + 5, .y = MAINARM_LENGTH + 3, .z = -4.0};
+	enum ClawPosition { Open, Ready, Closed };
+
+	RobotPosition defaultPosition = { .x = HOARM_LENGTH + 5, .y = MAINARM_LENGTH + 3, .z = 0, .c = Open};
 	RobotPosition robotPosition = defaultPosition;
 	RobotPosition currRobotPosition;
 	RobotPosition originalRobotPosition;
@@ -26,7 +29,9 @@ class RobotMove {
 
 	public:
 	void init() {
+		printf("Start INIT\n");
 		setRobotPosition(defaultPosition);
+		printf("End INIT\n");
 	}
 	bool processRobotMove(char *move, vector<Square>& squareList) {
 		if(squareList.size() != 64) return false;
@@ -37,10 +42,10 @@ class RobotMove {
 				Square square = squareList[r + c * 8];
 				//square = rotateSquare(square, { .rotation = square.rotation });
 				boardCenter = calcCenterFromMiddleForSquares(r, c, square);
-				spacingCenter += square.spacing;
+				spacingCenter = square.spacing;
 			}
 		}
-		spacingCenter /= 4;
+		//spacingCenter /= 4;
 
 		float pixelDistanceRatio = calcPixelDistanceRatio(spacingCenter, SQUARE_WIDTH_CM);
 		float height = cameraHeightFromFieldWidth(pixelDistanceRatio);
@@ -73,13 +78,49 @@ class RobotMove {
 		printf("RM Calculated HEIGHT: %f for fieldWidth: %f\n", height, pixelDistanceRatio * COLS);
 		printf("RM Calculated board offset: %f %f\n", realDistCamCenterToBoardCenter.x, realDistCamCenterToBoardCenter.y);
 
-		RobotPosition robotPositionFrom = calculateRobotPositionHover(realDistCamCenterToBoardCenter, boardCenterToTargetFrom, SWOOP_HEIGHT);
-		RobotPosition robotPositionTo = calculateRobotPositionHover(realDistCamCenterToBoardCenter, boardCenterToTargetTo, SWOOP_HEIGHT);
-		/*if(setRobotPosition(robotPositionFrom)) {
+		RobotPosition robotPositionFrom = calculateRobotPositionHover(realDistCamCenterToBoardCenter, boardCenterToTargetFrom, SWOOP_HEIGHT, Ready);
+		RobotPosition robotPositionTo = calculateRobotPositionHover(realDistCamCenterToBoardCenter, boardCenterToTargetTo, SWOOP_HEIGHT, Closed);
+
+
+		RobotPosition position;
+		if(setRobotPosition(robotPositionFrom)) {
 			robotPosition = robotPositionFrom;
 		}
-		sleep(5);
+		sleep(3);
+		position = verticalShift(robotPosition, PICKUP_HEIGHT, Ready);
+		if(setRobotPosition(position)) {
+			robotPosition = position;
+		}
+		sleep(3);
+		position = verticalShift(robotPosition, PICKUP_HEIGHT, Closed);
+		if(setRobotPosition(position)) {
+			robotPosition = position;
+		}
+		sleep(3);
+		position = verticalShift(robotPosition, SWOOP_HEIGHT, Closed);
+		if(setRobotPosition(position)) {
+			robotPosition = position;
+		}
+		sleep(3);
 		if(setRobotPosition(robotPositionTo)) {
+			robotPosition = robotPositionTo;
+		}
+		sleep(3);
+		position = verticalShift(robotPosition, PICKUP_HEIGHT, Closed);
+		if(setRobotPosition(position)) {
+			robotPosition = position;
+		}
+		sleep(3);
+		position = verticalShift(robotPosition, PICKUP_HEIGHT, Open);
+		if(setRobotPosition(position)) {
+			robotPosition = position;
+		}
+		sleep(3);
+		if(setRobotPosition(defaultPosition)) {
+			robotPosition = defaultPosition;
+		}
+
+		/*if(setRobotPosition(robotPositionTo)) {
 			robotPosition = robotPositionTo;
 		}*/
 		printf("RM Default: %f %f %f\n", robotPosition.x, robotPosition.y, robotPosition.z);
@@ -92,7 +133,7 @@ class RobotMove {
 	}
 
 	private:
-	RobotPosition calculateRobotPositionHover(FPoint realDistCamCenterToBoardCenter, FPoint boardCenterToTarget, float height) {
+	RobotPosition calculateRobotPositionHover(FPoint realDistCamCenterToBoardCenter, FPoint boardCenterToTarget, float height, ClawPosition c) {
 		FPoint move = {
 			.x = boardCenterToTarget.x - realDistCamCenterToBoardCenter.x,
 			.y = boardCenterToTarget.y - realDistCamCenterToBoardCenter.y
@@ -103,9 +144,16 @@ class RobotMove {
 		return {
 			.x = robotPosition.x + move.y - CAMERA_TO_CLAW_OFFSET,
 			.y = height,
-			.z = robotPosition.z + move.x
+			.z = robotPosition.z + move.x,
+			.c = c
 		};
 
+	}
+
+	RobotPosition verticalShift(RobotPosition position, float height, ClawPosition claw) {
+		position.y = height;
+		position.c = claw;
+		return position;
 	}
 
 	FPoint calcCenterFromMiddleForSquares(int r, int c, Square square) {
@@ -138,7 +186,7 @@ class RobotMove {
 		if(curl) {
 			printf("CURL Init\n");
 			char strBuffer[BUFSIZ];
-			sprintf(strBuffer,  "http://chessrobot.local/setpos?x=%f&y=%f&z=%f", _position.x, _position.y, _position.z);
+			sprintf(strBuffer,  "http://chessrobot.local/setpos?x=%f&y=%f&z=%f&c=%d", _position.x, _position.y, _position.z, _position.c);
 			printf("URL STARTED");
 			printf("THIS URL: %s\n", strBuffer);
 			curl_easy_setopt(curl, CURLOPT_URL, strBuffer);

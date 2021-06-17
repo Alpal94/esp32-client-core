@@ -134,6 +134,7 @@ class Positions {
 
 	void insertChessPiece(Colour colour, Point position) {
 		if(updating) {
+			printf("INSERTING: %d %d\n", position.x, position.y);
 			board[position.x][position.y] = {
 				.type = Unknown,
 				.colour = colour,
